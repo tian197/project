@@ -1,0 +1,85 @@
+# mysql数据库密码的修改
+
+3.1 mysql密码的修改与恢复
+
+3.1.1 修改密码
+	命令行修改
+		mysqladmin -uroot -p123456 password 654321
+		
+	数据库内修改
+		方法一：
+		update mysql.user set password=password('123456') where user='root' and host='localhost';
+		flush privileges;
+		
+		方法二：
+		set password for root@'localhost' =password('654321');
+		#注：这种方法无需刷新权限
+		
+		方法三：命令行执行
+		mysql_secure_installation
+		#安全配置向导，会对数据库进行简单的优化。
+		
+3.1.2 忘记mysql密码后的恢复
+	1、/etc/init.d/mysqld stop
+	2、mysqld_safe --skip-grant-tables --user=mysql &>/dev/null &
+	3、直接mysql无密码登录	
+	4、然后设置新密码
+	
+	
+如何防止mysql密码泄露
+	1、设置环境变量强制linux不记录敏感历史命令
+		临时生效（命令行操作）HISTCONTROL=ignorespace 然后[root@ m01 ~]#  mysql -uboy -pboy123           （执行此命令时，必须先空格才能实现不记录命令历史）
+		永久生效
+			echo  'HISTCONTROL=ignorespace'>>/etc/bashrc  然后source生效
+	2、通过history删除命令行记录
+		清空所有记录
+			history -c
+		删除指定行记录
+			history -d 行号
+		清空历史记录文件
+			>~/.bash_history
+	3、把密码写入my.cnf配置文件的 [mysqld] 下添加 skip-grant-tables，重启数据库
+	
+	
+	
+	
+	
+	
+	
+		
+	
+
+
+
+
+	
+		
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

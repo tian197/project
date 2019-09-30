@@ -1,0 +1,81 @@
+####tomcat实践####
+
+##安装jdk##
+上传jdk-8u60-linux-x64.tar.gz到服务器并解压
+tar -zxvf jdk-8u60-linux-x64.tar.gz -C /usr/local/
+chown -R root.root /usr/local/jdk1.8.0_60
+
+
+#配置java环境变量
+vim /etc/profile
+
+#添加以下几行
+####java_env####
+export JAVA_HOME=/usr/local/jdk1.8.0_60
+export PATH=$JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH
+export CLASSPATH=.$CLASSPATH:$JAVA_HOME/lib:$JAVA_HOME/jre/lib:$JAVA_HOME/lib/tools.jar
+
+#生效环境变量
+source /etc/profile
+
+
+#检查java是否安装成功
+出现以下效果说明jdk安装成功。
+[root@ c6m01 jdk1.8.0_60]# java -version
+java version "1.8.0_60"
+Java(TM) SE Runtime Environment (build 1.8.0_60-b27)
+Java HotSpot(TM) 64-Bit Server VM (build 25.60-b23, mixed mode)
+
+###################我是分割符#######################
+
+#tomcat安装
+上传apache-tomcat-7.0.47.tar.gz到服务器并解压
+tar -zxvf apache-tomcat-7.0.47.tar.gz -C /usr/local/
+
+
+
+#启动tomcat
+进入tomcat家目录，执行./bin/startup.sh
+cd /usr/local/apache-tomcat-7.0.47
+./bin/startup.sh
+
+#实时查看tomcat日志
+cd /usr/local/apache-tomcat-7.0.47
+tail -f logs/catalina.out
+
+#查看tomcat进程
+ps -ef|grep java
+
+#查看tomcat端口
+ss -lntp|grep java
+
+#关闭tomcat
+方法一：
+cd /usr/local/apache-tomcat-7.0.47
+./bin/shutdown.sh
+
+方法二：
+kill -9 pid（此处是tomcat进程的pid）
+
+
+
+#解决tomcat启动慢
+sed -i '/securerandom.source/s#securerandom.source=.*#securerandom.source=file:/dev/urandom#g' /usr/local/jdk1.8.0_60/jre/lib/security/java.security
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

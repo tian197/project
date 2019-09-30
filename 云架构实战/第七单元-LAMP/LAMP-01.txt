@@ -1,0 +1,115 @@
+####动态web架构####
+LAMP
+
+
+#Centos yum安装保存rpm到本地
+sed -i "s/keepcache=.*/keepcache=1/g" /etc/yum.conf
+
+#清理yum缓存
+yum clean all
+yum makecache
+
+#安装
+yum install mysql mysql-server php php-mysql php-fpm httpd -y
+yum -y install httpd* mysql* php*
+
+#查看下载的rpm包并统计（总共14个包）
+cd /var/cache/yum/x86_64/6/base/packages
+ls|wc -l
+14
+
+#服务器上传文件工具lrzsz
+#安装
+yum -y install lrzsz
+
+命令功能：
+rz 上传
+sz 下载
+
+使用方法：
+sz 文件
+rz
+
+
+#Apache默认支持html,整合php和Apache
+#编辑apache的配置文件
+vim /etc/httpd/conf/httpd.conf
+主页支持php
+
+402 DirectoryIndex index.php index.html index.html.var
+781 AddType application/x-httpd-php .php
+
+
+#重启httpd
+/etc/init.d/httpd restart
+
+#创建php测试页
+vim /var/www/html/index.php
+内容：
+<?php
+phpinfo();
+?>
+
+#启动数据库
+service mysqld start
+
+#默认是可以直接登录的
+mysql
+
+数据库存放的目录：/var/lib/mysql/
+#设置mysql登录密码
+mysqladmin -u root password '123456'
+
+登录数据库：
+mysql -u root -h 10.0.0.21 -p '123456'
+mysql -u用户 -h服务器ip -p密码
+
+
+
+#将论坛的安装包上传到服务器并解压
+#安装解压工具：
+yum -y install unzip
+解压
+unzip Discuz_X3.3_SC_UTF8.zip
+
+rm -f /var/www/html/*
+cp -a upload/* /var/www/html
+cd /var/www/html
+#增加可写权限
+chmod 777 -R *
+
+#编辑php配置文件
+vim /etc/php.ini
+#修改
+229 short_open_tag = On
+#重启httpd
+service httpd restart
+
+
+#mysql数据库的操作
+创建数据库
+mysqladmin create wg
+或者
+[root@ c6m01 ~]# mysql -uroot -hlocalhost -p'123456'
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| test               |
++--------------------+
+
+mysql> create database wg;
+
+退出数据库
+mysql> quit
+mysql> \q
+mysql> exit
+
+修改数据库root账户密码
+mysqladmin password 123456
+
+
+浏览器访问开始安装
+http://10.0.0.21

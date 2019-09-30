@@ -1,0 +1,67 @@
+####nginx+tomcat####
+
+#环境介绍
+10.0.0.21    nginx
+10.0.0.22	 tomcat（两个节点）
+
+
+#1.安装nginx(10.0.0.21)
+yum或编译安装方式均可，可参考第九单元。
+
+yum -y install gcc gcc-c++ pcre-devel openssl-devel openssl wget
+wget http://nginx.org/download/nginx-1.12.2.tar.gz
+tar -zxvf nginx-1.12.2.tar.gz
+cd nginx-1.12.2
+./configure --prefix=/usr/local/nginx
+make
+make install
+
+/usr/local/nginx/sbin/nginx
+
+
+#2.部署tomcat(两个节点)(10.0.0.22)
+参考第十二单元。
+
+
+
+#3.通过Nginx和Tomcat结合
+修改Nignx配置文件
+vim /usr/local/nginx/conf/nginx.conf
+
+#配置反代或负载均衡的池子
+在HTTP模块中添加：
+upstream tomcat {     #定义服务器组tomcat
+    server 10.0.0.22:8080;    #定义后Tomcat端服务器
+    server 10.0.0.22:18080;
+}
+
+
+在server模块中添加：
+location ~ \.jsp$ {   #URL正则匹配，匹配jsp结尾的所有URL
+	proxy_pass   http://tomcat;   #proxy_pass反向代理参数，将匹配到的请求反向代理到tomcat服务器组！
+}
+
+
+启动nginx并测试
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,135 @@
+####创建数据库####
+
+a) 直接创建数据库：
+create database wg;
+
+创建wg数据库并设置字符集为utf8:
+create database wg default CHARACTER SET utf8;
+
+b) 如果不存在则创建数据库: 
+create database if not  exists wg；
+
+
+####删除数据库####
+a) 直接删除数据库的方法:
+drop  database wg；
+
+b) 如果存在则删除数据库的方法: 
+drop database if exists wg；
+
+####进入数据库####
+use wg;
+
+####显示所有数据库####
+show databases;
+show databases like '%old%';  显示包含old字符的数据库
+show create database 库名\G  查看已建库的完整语句
+
+
+####数据表的操作####
+注意：表的操作过程，都是在指定数据库执行的。
+
+####创建表####
+
+例如：
+创建一个英雄基本信息表hero，字段为：角色 攻击类型 攻击力
+use lol;
+CREATE TABLE hero (
+id  int NOT NULL AUTO_INCREMENT ,
+角色  varchar(20) NULL,
+攻击类型  varchar(50) NULL,
+攻击力  double NULL,
+PRIMARY KEY (id)
+);
+
+
+####删除表####
+drop table hero;
+
+####查看数据库中有多少张表####
+show tables;
+
+####显示表结构####
+desc 库名.表名;
+desc lol.hero;
+show columns from 库名.表名;
+show columns from lol.hero;
+
+####查询表结构SQL语句####
+show create table 表名\G
+或
+show create table hero；
+
+
+####mysql表中字段的添加、修改、删除####
+
+添加列
+在表的最后追加列 攻速:   
+alter table hero add 攻速 double;
+
+在名为 攻击力 的列后插入列 血量:  
+alter table hero add 血量 varchar(20) after 攻击力;
+
+修改列
+基本形式: 
+alter table 表名 change 列名称 列新名称 新数据类型;
+alter table hero change 攻击类型 职业 varchar(20);
+
+删除列
+
+基本形式: alter table 表名 drop 列名称;
+示例:
+删除 攻速 列:  
+alter table hero drop 攻速;
+
+
+
+####mysql数据库中表的重命名和复制####
+修改表名
+例子：将student表重新命名为stu
+alter table student rename to stu;
+
+例子：将stu表重命名student表
+rename table stu to student; 
+
+注意：当你执行 RENAME 时，你不能有任何锁定的表或活动的事务。你同样也必须有对原初表的 ALTER 和 DROP 权限，以及对新表的 CREATE 和 INSERT权限。
+
+表的复制
+a) create table 新表名 like 旧表名;      //只复制表结构不复制数据
+b) create table 新表名 select * from 旧表名;      //表结构和数据一起复制
+
+####mysql表中数据的插入、删除和修改####
+
+插入
+insert into hero values(id,'蛮王','战士',200);
+
+修改
+update hero set 角色='剑圣' where id=1;
+
+删除
+delete from hero where id=1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

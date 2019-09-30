@@ -1,0 +1,134 @@
+####启用虚拟主机的准备工作####
+#安装httpd
+yum install httpd -y
+
+#禁用默认的主机模式
+vim /etc/httpd/conf/httpd.conf
+#注释下面这行内容
+#DocumentRoot "/var/www/html"
+
+
+####基于IP的虚拟主机####
+ifconfig eth0:0 10.0.0.30
+
+cd /etc/httpd/conf.d/
+vim virtualhost.conf
+
+#基于IP的虚拟主机配置
+<VirtualHost 10.0.0.21:80>
+  DocumentRoot "/var/www/bw"
+</VirtualHost>
+
+<VirtualHost 10.0.0.30:80>
+  DocumentRoot "/var/www/wg"
+</VirtualHost>
+
+#创建目录
+mkdir -p /var/www/bw
+mkdir -p /var/www/wg
+
+#创建测试文件
+echo 'this is bw' >>/var/www/bw/index.html
+echo 'this is wg' >>/var/www/wg/index.html
+
+#测试访问
+/etc/init.d/httpd restart
+elinks  10.0.0.21:80
+elinks  10.0.0.30:80
+
+
+####基于端口的虚拟主机####
+#修改主配置文件
+vim /etc/httpd/conf/httpd.conf 
+#在原有行Listen 80行的基础上， 在添加一行
+Listen 80
+Listen 81
+
+#测试访问
+/etc/init.d/httpd restart
+elinks  10.0.0.21:80
+elinks  10.0.0.21:81
+
+
+
+####配置基于域名的虚拟主机####
+cd /etc/httpd/conf.d/
+
+vim virtualhost.conf
+#基于域名拟主机配置
+<VirtualHost 10.0.0.21:80>
+  DocumentRoot "/var/www/bw"
+  ServerName    www.bw.com		#此处添加ServerName并配置域名
+</VirtualHost>
+
+<VirtualHost 10.0.0.30:80>
+  DocumentRoot "/var/www/wg"		#此处添加ServerName并配置域名
+  ServerName    www.wg.com
+</VirtualHost>
+
+#基于IP的虚拟主机配置
+<VirtualHost 10.0.0.21:80>
+  DocumentRoot "/var/www/bw"
+</VirtualHost>
+
+<VirtualHost 10.0.0.30:80>
+  DocumentRoot "/var/www/wg"
+</VirtualHost>
+
+
+#基于端口的虚拟主机配置
+<VirtualHost 10.0.0.21:81>
+  DocumentRoot "/var/www/bw"
+</VirtualHost>
+
+
+#配置本地hosts
+[root@ c6m01 conf.d]# vim /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+10.0.0.21 www.bw.com
+10.0.0.30 www.wg.com
+
+#测试访问
+elinks -source www.bw.com
+elinks -source www.wg.com
+
+
+####认证授权和访问控制####
+useradd tom
+htpasswd -c /etc/httpd/webpasswd tom
+
+cd /etc/httpd/conf.d
+vim virtualhost.conf
+#基于IP的虚拟主机配置
+<VirtualHost 10.0.0.21:80>
+  DocumentRoot "/var/www/bw"
+  ServerName    www.bw.com
+  <Directory /var/www/bw>
+  AuthType Basic
+  AuthName Password
+  AuthUserFile /etc/httpd/webpasswd
+  require user tom
+  </Directory>
+</VirtualHost>
+
+#重启
+/etc/init.d/httpd restart
+
+#测试访问（会让用户输入账号密码）
+elinks www.bw.com
+或者
+绑定windows的hosts
+谷歌浏览器访问：www.bw.com
+
+
+
+
+
+
+
+
+
+
+
+

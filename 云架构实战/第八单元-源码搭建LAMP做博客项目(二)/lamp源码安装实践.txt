@@ -1,0 +1,183 @@
+#### LAMP源码安装 ####
+
+
+####编译安装apache（httpd）####
+#安装依赖
+yum -y install gcc gcc-c++
+
+#上传httpd源码包，并解压。
+tar -xvf httpd-2.2.9.tar.gz
+cd httpd-2.2.9
+./configure --enable-so --prefix=/usr/local/apache2
+make
+make install
+
+#启动apache
+/usr/local/apache2/bin/apachectl -k start
+
+#停止apache
+/usr/local/apache2/bin/apachectl -k stop
+
+#重启apahce
+/usr/local/apache2/bin/apachectl -k restart
+
+#查看进程
+ps -ef|grep httpd
+
+#查看端口
+ss -lntp|grep httpd
+
+#添加开机自启
+vim /etc/rc.local
+/usr/local/apache2/bin/apachectl start
+
+
+
+####编译安装mysql####
+#安装依赖
+yum install ncurses-devel libaio-devel cmake -y
+
+tar -zvxf mysql-5.6.15.tar.gz
+cd mysql-5.6.15
+
+#执行环境检测并指定安装路径
+cmake  -DCMAKE_INSTALL_PREFIX=/usr/local/mysql
+
+#编译并编译安装
+make && make install
+
+#安装完毕之后生成配置文件
+\cp /usr/local/mysql/support-files/my-default.cnf /etc/my.cnf
+
+#新建mysql用户，不可登录操作系统
+useradd -s /sbin/nologin mysql
+
+#将所有mysql的相关文件所属组改为mysql用户
+chown -R mysql.mysql  /usr/local/mysql
+
+#初始化数据库
+/usr/local/mysql/scripts/mysql_install_db --user=mysql --datadir=/usr/local/mysql/data --basedir=/usr/local/mysql
+
+#生成mysql启动脚本，这样我们就可以使用service来启动服务
+\cp /usr/local/mysql/support-files/mysql.server /etc/rc.d/init.d/mysqld
+
+#并给启动脚本755权限
+chmod 755 /etc/rc.d/init.d/mysqld
+
+#为方便工作 做软链接
+ln -sv /usr/local/mysql/bin/* /usr/local/sbin/
+
+#启动mysql
+service mysqld start
+
+#查看进程
+ps -ef|grep mysql
+
+#查看mysql端口
+ss -lntp|grep mysql
+
+
+####编译安装php####
+#安装依赖
+yum -y install libjpeg-devel libpng-devel freetype-devel libxml2-devel libcurl-devel gcc gcc-c++ bzip2-devel
+openssl-devel
+
+进入解压目录里执行
+tar -zxvf php-5.3.10.tar.gz
+cd php-5.3.10
+
+./configure --prefix=/usr/local/php \
+--with-apxs2=/usr/local/apache2/bin/apxs \
+--with-gd \
+--with-ttf \
+--with-zlib-dir \
+--with-jpeg-dir \
+--with-png-dir \
+--with-mysql=/usr/local/mysql
+
+make
+make install
+
+#修改主配置文件名称为/usr/local/php/etc/php.ini
+cp php.ini-development   /usr/local/php/etc/php.ini 
+
+
+####配置Apache支持php动态网站####
+#修改Apache配置文件
+vim /usr/local/apache2/conf/httpd.conf
+#修改如下配置
+DirectoryIndex index.php index.html    #支持php
+AddType application/x-httpd-php .php   #支持php应用
+
+#重启apahce
+/usr/local/apache2/bin/apachectl -k restart 
+
+####配置wordpress####
+#上传wordpress-4.9.4-zh_CN.zip并解压
+unzip wordpress-4.9.4-zh_CN.zip
+rm -rf /usr/local/apache2/htdocs/*
+cp -a wordpress/* /usr/local/apache2/htdocs/
+cd /usr/local/apache2/htdocs/
+cp wp-config-sample.php wp-config.php
+vim wp-config.php
+// ** MySQL 设置 - 具体信息来自您正在使用的主机 ** //
+/** WordPress数据库的名称 */
+define('DB_NAME', 'wordpress');
+ 
+/** MySQL数据库用户名 */
+define('DB_USER', 'root');
+ 
+/** MySQL数据库密码 */
+define('DB_PASSWORD', 'wordpress2018');
+ 
+/** MySQL主机 */
+define('DB_HOST', 'localhost');
+
+#通过浏览器访问测试
+http://10.0.0.21
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

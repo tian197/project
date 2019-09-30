@@ -1,0 +1,112 @@
+####nginx####
+
+# 环境介绍
+系统：CentOS release 6.8 (Final)
+内核：2.6.32-642.el6.x86_64
+yum源：mirrors.aliyun.com
+主机名：c6m01
+IP地址：10.0.0.21
+注意：安装前还原一下快照，保持系统的纯净。
+
+# 安装依赖
+yum -y install gcc gcc-c++ pcre-devel openssl-devel openssl wget
+
+
+# 下载nginx安装包
+wget http://nginx.org/download/nginx-1.12.2.tar.gz
+
+# 解压nginx包
+tar -zxvf nginx-1.12.2.tar.gz
+
+# 切换目录
+cd nginx-1.12.2
+
+#配置和检测环境
+./configure --prefix=/usr/local/nginx
+
+# 编译
+make
+
+# 编译安装
+make install
+
+# 启动nginx
+/usr/local/nginx/sbin/nginx
+
+# 做软连接
+ln -sv /usr/local/nginx/sbin/nginx /usr/bin/nginx
+
+# 以后启停方式
+nginx		#启动nginx
+
+nginx -t		#检查语法
+nginx: the configuration file /usr/local/nginx/conf/nginx.conf syntax is ok
+nginx: configuration file /usr/local/nginx/conf/nginx.conf test is successful
+
+ps -ef|grep nginx		#查看进程
+
+nginx -s stop		#停止nginx
+nginx -s reload		#当子配置文件发生变化，重新载入配置文件
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,128 @@
+源码安装对比
+#######################################################################################################
+1.lamp
+源码包安装
+
+
+安装步骤3步
+
+安装所需要的编译gcc gcc-c++  cmake libtool ncurses-devel  perl glibc libxml2-devel libcurl-devel
+
+1../configure  --prefix=绝对路径（指定安装的目录）  环境检测，Makefile 规则文件   
+2.make		编译	  读取Makfile文件
+3.make install  编译安装  
+
+rpm 安装
+
+简单，快速，有依赖关系
+
+yum 安装
+
+yum 仓库，网络yum源，资源比较丰富，
+
+yum remove 
+
+源码包安装 
+1.没有依赖关系，
+2.他可以跨平台
+3.方便管理，/usr/local/apache  rm -rf apache        
+
+缺点：
+1.安装比较麻烦
+2.安装时间比较长
+
+Error 错误
+
+
+#######################################################################################################
+源码包搭建lamp的详细步骤：
+#######################################################################################################
+1.源码包安装httpd。
+	yum -y install gcc gcc-c++  cmake libtool ncurses-devel  libjpeg-turbo-devel libpng-devel gd perl glibc libxml2-devel libcurl-devel
+	cd到httpd源码包所在目录，解压源码包。
+	tar -xvf httpd-2.2.9.tar.gz     解压源码包
+	cd httpd-2.2.9	    		切换到httpd目录下
+	./configure --enable-so --prefix=/usr/local/apache2 让apache核心装载DSO,并指定安装目录为 /usr/local/apache2 
+	make && make install	    编译并编译安装
+	启动apache
+	/usr/local/apache2/bin/apachectl start
+	/usr/local/apache2/bin/apachectl stop
+#######################################################################################################
+
+2.编译安装mysql 
+解压：tar zxf mysql-5.6.15.tar.gz
+切换目录： cd mysql-5.6.15
+
+执行环境检测并指定安装路径
+cmake  -DCMAKE_INSTALL_PREFIX=/usr/local/mysql
+
+编译并编译安装
+make && make install
+安装完毕之后
+
+
+生成配置文件
+cp /usr/local/mysql/support-files/my-default.cnf /etc/my.cnf
+
+新建mysql用户，不可登录操作系统
+
+useradd -s /sbin/nologin mysql
+
+cd /usr/local/
+
+将所有mysql的相关文件所属组改为mysql用户
+chown -R mysql.mysql  mysql
+
+初始化数据库
+/usr/local/mysql/scripts/mysql_install_db --user=mysql --datadir=/usr/local/mysql/data --basedir=/usr/local/mysql
+
+生成mysql启动脚本，这样我们就可以使用service来启动服务
+
+cp /usr/local/mysql/support-files/mysql.server /etc/rc.d/init.d/mysqld
+
+并给启动脚本755权限
+chmod 755 /etc/rc.d/init.d/mysqld
+
+为方便工作 做软链接
+
+ln -s /usr/local/mysql/bin/* /usr/local/sbin/
+
+启动mysql
+service mysqld start
+
+#######################################################################################################
+3.源码包安装 php
+进入解压目录里执行
+tar zxf php-5.3.10.tar.gz
+cd php-5.3.10
+
+./configure --prefix=/usr/local/php（指定安装路径） --with-apxs2=/usr/local/apache2/bin/apxs（php和apache的连接） --with-gd --with-ttf（连接freetype） --with-zlib-dir --with-jpeg-dir  --with-png-dir --with-mysql=/usr/local/mysql 依次链接之前安装的各种软件
+
+./configure --prefix=/usr/local/php --with-apxs2=/usr/local/apache2/bin/apxs --with-gd --enable-gd-native-ttf --with-zlib-dir --with-jpeg-dir  --with-png-dir --with-mysql=/usr/local/mysql --with-curl
+
+make && make install
+
+cp php.ini-development   /usr/local/php/etc/php.ini 修改主配置文件名称/usr/local/php/etc/php.ini
+
+#######################################################################################################
+4.配置Apache支持php动态网站
+	/usr/local/apache2/bin/apachectl start  开启Apache服务 
+	vim /usr/local/apache2/conf/httpd.conf 编辑Apache主配置文件
+	
+	查找/AddType
+	添加AddType application/x-httpd-php .php      
+	添加php应用，支持php动态网站
+	Directory Index index.html index.php  添加index.php为默认主页
+	创建动态网页index.php
+	vim /usr/local/apache2/htdocs/index.php
+	-----------------------------------
+	<?php
+	phpinfo();
+	?>
+	-----------------------------------
+
+访问测试 显示php版本信息即为正确
+
+
+
+

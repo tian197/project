@@ -1,0 +1,173 @@
+####搭建LNMP网站架构####
+
+#编译安装nginx（参考昨天）
+
+#yum 安装mysql和php
+yum -y install  mysql mysql-server php php-mysql php-fpm
+
+#nginx和php的结合
+[root@ c6m01 bw]# cat /usr/local/nginx/conf/nginx.conf
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    keepalive_timeout  65;
+
+#####基于端口的虚拟主机
+#    server {
+#        listen       80;
+#        location / {
+#            root   /www/wg;
+#            index  index.html index.htm;
+#        }
+#    }
+#
+#    server {
+#        listen 8080;
+#        location / {
+#            root   /www/bw;
+#            index  index.html index.htm;
+#        }
+#    }
+########################
+
+####基于IP的虚拟主机
+#
+#server {
+#	listen 10.0.0.21:80;
+#	root /www/wg;
+#	index index.html;
+#    }
+#
+#server {
+#	listen 10.0.0.30:80;
+#	root /www/bw;
+#	index index.html;
+#    }
+
+
+####基于域名的虚拟主机
+#server {
+#	listen 80;
+#	server_name www.wg.com;
+#	location / {
+#	    root /www/wg;
+#	    auth_basic  "Please input your name: ";
+#	    auth_basic_user_file /usr/local/nginx/conf/htpasswd;
+#	}
+#    }
+
+server {
+	listen 80;
+	server_name www.bw.com;
+
+    	location / {
+	    root /www/bw;
+	    index  index.php index.html index.htm;
+	}
+
+        location ~ \.php$ {
+	       root          /www/bw;
+	       fastcgi_pass   127.0.0.1:9000;
+	       fastcgi_index  index.php;
+	       fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+	       include        fastcgi_params;
+        }
+    }
+}
+
+
+#重启nginx
+/usr/local/nginx/sbin/nginx -s stop
+/usr/local/nginx/sbin/nginx
+
+#编写php测试页面测试
+rm -f /www/bw/*
+[root@ c6m01 ~]# vim /www/bw/index.php
+<?php
+phpinfo();
+?>
+
+#访问时如果出现502，请检查一下php-fpm是否启动
+[root@ c6m01 ~]# /etc/init.d/php-fpm start			#启动php-fpm
+Starting php-fpm:                                          [  OK  ]
+[root@ c6m01 ~]# chkconfig php-fpm on				#添加到开机自启动
+
+#然后访问测试，出现php-info页面即可。说明nginx+php是没有问题的。
+
+
+#在lnmp上搭建wordpress
+上传wordpress-4.9.4-zh_CN.zip到服务器
+[root@ c6m01 ~]# unzip wordpress-4.9.4-zh_CN.zip
+[root@ c6m01 ~]# rm -f /www/bw/*
+[root@ c6m01 ~]# cp -a wordpress/* /www/bw/
+
+
+#启动mysql
+[root@ c6m01 ~]# /etc/init.d/mysqld start
+
+#创建wordpress数据库
+[root@ c6m01 ~]# mysql
+mysql> create database wordpress;
+
+#修改wordpress的wp-config.php配置文件
+[root@ c6m01 bw]# cp wp-config-sample.php wp-config.php
+[root@ c6m01 bw]# vim wp-config.php
+// ** MySQL 设置 - 具体信息来自您正在使用的主机 ** //
+/** WordPress数据库的名称 */
+define('DB_NAME', 'wordpress');
+
+/** MySQL数据库用户名 */
+define('DB_USER', 'root');
+
+/** MySQL数据库密码 */
+define('DB_PASSWORD', '');
+
+#重启php-fpm
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

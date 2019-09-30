@@ -1,0 +1,223 @@
+####nagios####
+
+nagios安装环境介绍
+Nagios-Server	10.0.0.21	Apache、Php、Nagios、nagios-plugins、nrpe
+Nagios-Client 	10.0.0.22	nagios-plugins、nrpe
+
+##nagios监控端部署
+#1.在10.0.0.21上搭建lamp环境
+yum -y install httpd php lrzsz openssl-devel gcc gcc-c++
+
+#整合Apache和PHP
+vim /etc/httpd/conf/httpd.conf
+DirectoryIndex index.php index.html index.html.var
+AddType application/x-httpd-php .php
+
+
+#2.在10.0.0.21安装nagios-server服务端
+安装所需包组件
+nagios-4.3.1.tar.gz
+nagios-plugins-1.5.tar.gz
+nrpe-2.12.tar.gz
+
+
+#创建nagios用户组和用户
+groupadd nagios
+useradd -g nagios nagios
+
+#编译安装nagios
+wget https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.3.1.tar.gz
+tar -zxvf nagios-4.3.1.tar.gz
+cd nagios-4.3.1
+./configure --prefix=/usr/local/nagios
+make all
+make install
+make install-init
+make install-commandmode	
+make install-webconf
+make install-config
+
+#生成Nagios网页认证文件并创建用户
+htpasswd  -c  /usr/local/nagios/etc/htpasswd.users   nagiosadmin
+
+#添加nagios到开机自启
+chkconfig --add nagios
+chkconfig --level 35 nagios on
+chkconfig --list nagios
+
+#检查配置文件
+/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+或
+/etc/init.d/nagios configtest
+
+#启动httpd和nagios
+/etc/init.d/httpd restart
+/etc/init.d/nagios restart
+
+#查看进程
+ps -ef|grep nagios
+ps -ef|grep httpd
+
+#3.在10.0.0.21上安装nagios-plugins
+wget https://nagios-plugins.org/download/nagios-plugins-2.1.4.tar.gz
+tar -zxvf nagios-plugins-2.1.4.tar.gz
+cd nagios-plugins-2.1.4
+./configure --prefix=/usr/local/nagios --with-nagios-user=nagios --with-nagios-group=nagios
+make
+make install
+#注意：如果要监控mysql 需要添加 --with-mysql
+
+
+#4.在10.0.0.21上安装nrpe
+yum -y install gcc gcc-c++ openssl-devel xinetd
+wget http://prdownloads.sourceforge.net/sourceforge/nagios/nrpe-2.15.tar.gz
+tar -zxvf nrpe-2.15.tar.gz
+cd nrpe-2.15
+./configure --prefix=/usr/local/nagios
+make all
+make install-plugin
+make install-daemon
+make install-daemon-config
+make install-xinetd
+
+配置NRPE
+vim /usr/local/nagios/etc/nrpe.cfg
+allowed_hosts=127.0.0.1,10.0.0.21
+
+vim /etc/xinetd.d/nrpe
+only_from       = 127.0.0.1 10.0.0.21
+
+#配置/etc/services
+vim +429 /etc/services
+nrpe            5666/tcp
+nrpe            5666/udp
+
+
+#启动NRPE
+/etc/init.d/xinetd restart
+
+#启动httpd和nagios
+/etc/init.d/httpd restart
+/etc/init.d/nagios restart
+
+#测试nrpe效果
+/usr/local/nagios/libexec/check_nrpe -H 10.0.0.21 -c check_load
+
+
+#5.浏览器访问
+http://10.0.0.21/nagios/
+
+
+
+##nagios被监控端部署(10.0.0.22)
+#监控另一台linux服务器
+(1)添加nagios用户
+useradd -s /sbin/nologin nagios
+mkdir /usr/local/nagios
+chown -R nagios.nagios /usr/local/nagios
+
+(2)安装nagios-plugins
+wget https://nagios-plugins.org/download/nagios-plugins-2.1.4.tar.gz
+tar -zxvf nagios-plugins-2.1.4.tar.gz
+cd nagios-plugins-2.1.4
+./configure --prefix=/usr/local/nagios --with-nagios-user=nagios --with-nagios-group=nagios
+make
+make install
+
+(3)安装NRPE
+yum -y install gcc gcc-c++ openssl-devel xinetd
+wget http://prdownloads.sourceforge.net/sourceforge/nagios/nrpe-2.15.tar.gz
+tar -zxvf nrpe-2.15.tar.gz
+cd nrpe-2.15
+./configure --prefix=/usr/local/nagios
+make all
+make install-plugin
+make install-daemon
+make install-daemon-config
+make install-xinetd
+
+配置NRPE
+vim /usr/local/nagios/etc/nrpe.cfg
+allowed_hosts=10.0.0.21
+
+vim /etc/xinetd.d/nrpe
+only_from       = 10.0.0.21
+
+#配置/etc/services
+vim +429 /etc/services
+nrpe            5666/tcp
+nrpe            5666/udp
+
+#启动NRPE
+/etc/init.d/xinetd restart
+
+
+
+##在Nagios监控端10.0.0.21上添加一台被监控的主机
+(1)新增一个配置文件linux.cfg
+vim /usr/local/nagios/etc/nagios.cfg
+增加
+cfg_file=/usr/local/nagios/etc/objects/linux.cfg
+
+
+(2)编辑新加主机的配置文件
+vim /usr/local/nagios/etc/objects/linux.cfg
+
+define host{
+        use                     linux-server
+        host_name               c6s02
+        alias                   c6s02
+        address                 10.0.0.22
+        }
+
+#修改属主属组
+chown -R nagios.nagios /usr/local/nagios/etc/objects/linux.cfg	
+		
+(3)检查语法并重启
+/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+或者
+/etc/init.d/nagios configtest
+/etc/init.d/nagios restart
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

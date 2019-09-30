@@ -1,0 +1,123 @@
+#rpm安装mysql
+yum -y remove mysql*
+rm -rf /var/lib/mysql/*
+
+安装mysql-server
+rpm -ivh MySQL-server-5.6.45-1.el6.x86_64.rpm
+/etc/init.d/mysql start
+
+查看进程和端口
+ps -ef|grep mysql
+ss -lntp|grep mysql
+
+查看mysql登录密码
+cat /root/.mysql_secret
+MwOYx9dk3_owUrZH
+
+安装mysql-client
+rpm -ivh MySQL-client-5.6.45-1.el6.x86_64.rpm
+
+修改密码（此处-p后边的密码是cat /root/.mysql_secret看到的）
+mysqladmin -uroot -pMwOYx9dk3_owUrZH password 123456
+
+登录mysql
+mysql -uroot -hlocalhost -p123456
+
+rpm安装的mysql配置文件在 /usr/my.cnf
+rpm安装的mysql数据目录在 /var/lib/mysql
+	  
+
+#源码安装mysql
+yum -y remove mysql*
+rm -rf /var/lib/mysql/*
+#1.下载源码包
+wget --no-check-certificate http://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-5.6.45.tar.gz
+
+#2.安装依赖
+yum -y install ncurses-devel libaio-devel cmake
+
+#3.设置用户
+useradd -s /sbin/nologin -M mysql
+id mysql
+
+#4.解压并检查编译环境
+tar -zxvf mysql-5.6.45.tar.gz
+cd mysql-5.6.45
+
+cmake . -DCMAKE_INSTALL_PREFIX=/usr/local/mysql \
+-DMYSQL_DATADIR=/usr/local/mysql/data \
+-DMYSQL_UNIX_ADDR=/usr/local/mysql/mysql.sock \
+-DMYSQL_USER=mysql \
+-DMYSQL_TCP_PORT=3306 \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DWITH_EXTRA_CHARSETS=all \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_FEDERATED_STORAGE_ENGINE=1 \
+-DWITH_BLACKHOLE_STORAGE_ENGINE=1 \
+-DWITHOUT_EXAMPLE_STORAGE_ENGINE=1 \
+-DWITH_ZLIB=bundled \
+-DWITH_SSL=bundled \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_EMBEDDED_SERVER=1 \
+-DENABLE_DOWNLOADS=1 \
+-DWITH_DEBUG=0
+
+#5.编译并安装
+make && make install
+
+#6.初始化及配置数据库
+cd /usr/local/mysql/
+\cp support-files/my-default.cnf /etc/my.cnf
+/usr/local/mysql/scripts/mysql_install_db --basedir=/usr/local/mysql/ --datadir=/usr/local/mysql/data --user=mysql
+
+#7.设置mysql工作目录属主属组
+chown -R mysql.mysql /usr/local/mysql/
+
+#8.配置启动脚本管理mysql
+cd /usr/local/mysql/
+\cp support-files/mysql.server /etc/init.d/mysqld
+chmod 700 /etc/init.d/mysqld
+chkconfig mysqld on
+/etc/init.d/mysqld restart
+
+#9.设置mysql登录密码
+/usr/local/mysql/bin/mysqladmin -u root password '123456'
+
+#10.添加mysql等命令到环境变量并生效
+echo 'export PATH=/usr/local/mysql/bin/:$PATH' >>/etc/profile
+source /etc/profile
+
+
+
+查看当前所在的库
+select database();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
