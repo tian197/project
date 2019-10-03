@@ -78,10 +78,10 @@ binlog_format = 'MIXED';
 
 **环境介绍**
 
-| 主机名 | 主机类型       | ip        | system    | 安装包                                                       |
+| 主机名 | 主机类型       | ip        | system    | yum安装包                                                    |
 | ------ | -------------- | --------- | --------- | ------------------------------------------------------------ |
-| c6m01  | 主服务器master | 10.0.0.21 | centos6.8 | MySQL-server-5.6.45-1.el6.x86_64.rpm                                                   MySQL-client-5.6.45-1.el6.x86_64.rpm |
-| c6s02  | 从服务器slave  | 10.0.0.22 | centos6.8 | MySQL-server-5.6.45-1.el6.x86_64.rpm                                                   MySQL-client-5.6.45-1.el6.x86_64.rpm |
+| c6m01  | 主服务器master | 10.0.0.21 | centos6.8 | mysql-server-5.1.73                                                              mysql-5.1.73 |
+| c6s02  | 从服务器slave  | 10.0.0.22 | centos6.8 | mysql-server-5.1.73                                                              mysql-5.1.73 |
 
 
 
@@ -97,18 +97,20 @@ binlog_format = 'MIXED';
 
 
 
-以下的配置方式是通过rpm安装mysql，如果是yum安装的mysql或者系统自带的，需要`vim /etc/my.cnf`。
+以下的配置方式是通过yum安装mysql,需要`vim /etc/my.cnf`。
 
 1.开启主库binlog,从库不用开,配置主从库server-id(不能相同)
 
 ```shell
-vim /usr/my.cnf
+yum -y install mysql mysql-server
+
+vim /etc/my.cnf
 
 [mysqld]
 server-id=1
 log-bin=mysql-bin
 
-/etc/init.d/mysql restart
+/etc/init.d/mysqld restart
 ```
 
 
@@ -145,13 +147,15 @@ mysql> show master status\G
 1.配置mysql从服务器
 
 ```
-vim /usr/my.cnf
+yum -y install mysql mysql-server
+
+vim /etc/my.cnf
 
 [mysqld]
 server-id=2
 relay-log=mysql-relay
 
-/etc/init.d/mysql restart
+/etc/init.d/mysqld restart
 ```
 
 2.关闭从服务器的复制功能
