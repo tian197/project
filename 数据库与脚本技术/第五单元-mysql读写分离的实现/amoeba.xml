@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="gbk"?>
+
+<!DOCTYPE amoeba:configuration SYSTEM "amoeba.dtd">
+<amoeba:configuration xmlns:amoeba="http://amoeba.meidusa.com/">
+
+	<proxy>
+	
+		<!-- service class must implements com.meidusa.amoeba.service.Service -->
+		<service name="Amoeba for Mysql" class="com.meidusa.amoeba.mysql.server.MySQLService">
+			<!-- port -->
+			<property name="port">8066</property>
+			
+			<!-- bind ipAddress -->
+			<!-- 
+			<property name="ipAddress">127.0.0.1</property>
+			 -->
+			
+			<property name="connectionFactory">
+				<bean class="com.meidusa.amoeba.mysql.net.MysqlClientConnectionFactory">
+					<property name="sendBufferSize">128</property>
+					<property name="receiveBufferSize">64</property>
+				</bean>
+			</property>
+			
+			<property name="authenticateProvider">
+				<bean class="com.meidusa.amoeba.mysql.server.MysqlClientAuthenticator">
+					
+					<property name="user">root</property>
+					
+					<property name="password">123456</property>
+					
+					<property name="filter">
+						<bean class="com.meidusa.toolkit.net.authenticate.server.IPAccessController">
+							<property name="ipFile">${amoeba.home}/conf/access_list.conf</property>
+						</bean>
+					</property>
+				</bean>
+			</property>
+			
+		</service>
+		
+		<runtime class="com.meidusa.amoeba.mysql.context.MysqlRuntimeContext">
+			
+			<!-- proxy server client process thread size -->
+			<property name="executeThreadSize">128</property>
+			
+			<!-- per connection cache prepared statement size  -->
+			<property name="statementCacheSize">500</property>
+			
+			<!-- default charset -->
+			<property name="serverCharset">utf8</property>
+			
+			<!-- query timeout( default: 60 second , TimeUnit:second) -->
+			<property name="queryTimeout">60</property>
+		</runtime>
+		
+	</proxy>
+	
+	<!-- 
+		Each ConnectionManager will start as thread
+		manager responsible for the Connection IO read , Death Detection
+	-->
+	<connectionManagerList>
+		<connectionManager name="defaultManager" class="com.meidusa.toolkit.net.MultiConnectionManagerWrapper">
+			<property name="subManagerClassName">com.meidusa.toolkit.net.AuthingableConnectionManager</property>
+		</connectionManager>
+	</connectionManagerList>
+	
+		<!-- default using file loader -->
+	<dbServerLoader class="com.meidusa.amoeba.context.DBServerConfigFileLoader">
+		<property name="configFile">${amoeba.home}/conf/dbServers.xml</property>
+	</dbServerLoader>
+	
+	<queryRouter class="com.meidusa.amoeba.mysql.parser.MysqlQueryRouter">
+		<property name="ruleLoader">
+			<bean class="com.meidusa.amoeba.route.TableRuleFileLoader">
+				<property name="ruleFile">${amoeba.home}/conf/rule.xml</property>
+				<property name="functionFile">${amoeba.home}/conf/ruleFunctionMap.xml</property>
+			</bean>
+		</property>
+		<property name="sqlFunctionFile">${amoeba.home}/conf/functionMap.xml</property>
+		<property name="LRUMapSize">1500</property>
+		<property name="defaultPool">master</property>
+		
+		<property name="writePool">master</property>
+		<property name="readPool">myslave</property>
+
+		<property name="needParse">true</property>
+	</queryRouter>
+</amoeba:configuration>
