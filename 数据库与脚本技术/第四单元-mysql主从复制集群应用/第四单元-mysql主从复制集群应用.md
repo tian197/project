@@ -206,7 +206,7 @@ mysql> show slave status\G
 
 
 
-Mysql多主多从架构分析
+## 4.3 Mysql多主多从架构分析
 
 ![1569748527976](assets/1569748527976.png)
 

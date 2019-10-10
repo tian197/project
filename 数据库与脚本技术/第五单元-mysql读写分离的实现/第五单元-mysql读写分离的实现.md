@@ -20,9 +20,9 @@
 
 ## 5.1 为什么要实现mysql读写分离
 
-​	大型网站为了软解大量的并发访问，除了在网站实现分布式负载均衡，远远不够。到了数据业务层、数据访问层，如果还是传统的数据结构，或者只是单单靠一台服务器来处理如此多的数据库连接操作，数据库必然会崩溃，特别是数据丢失的话，后果更是不堪设想。这时候，我们会考虑如何减少数据库的连接，下面就进入我们今天的主题。
+​	大型网站为了解决大量的并发访问，除了在网站实现分布式负载均衡，远远不够。到了数据业务层、数据访问层，如果还是传统的数据结构，或者只是单单靠一台服务器来处理如此多的数据库连接操作，数据库必然会崩溃，特别是数据丢失的话，后果更是不堪设想。这时候，我们会考虑如何减少数据库的连接，下面就进入我们今天的主题。
 
-​	利用主从数据库来实现读写分离，从而分担主数据库的压力。在多个服务器上部署mysql，将其中一台认为主数据库，而其他为从数据库，实现主从同步。其中**主数据库负责主动写的操作**，而**从数据库则只负责主动读的操作**（slave从数据库仍然会被动的进行写操作，为了保持数据一致性），这样就可以很大程度上的避免数据丢失的问题，同时也可减少数据库的连接，减轻主数据库的负载。
+​	**利用主从数据库来实现读写分离，从而分担主数据库的压力。**在多个服务器上部署mysql，将其中一台认为主数据库，而其他为从数据库，实现主从同步。其中**主数据库负责主动写的操作**，而**从数据库则只负责主动读的操作**（slave从数据库仍然会被动的进行写操作，为了保持数据一致性），这样就可以很大程度上的避免数据丢失的问题，同时也可减少数据库的连接，减轻主数据库的负载。
 
 
 
@@ -87,7 +87,7 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.60-b23, mixed mode)
 
 **3.下载安装Amoeba**
 
-我这里下载的是amoeba-mysql-3.0.5-RC-distribution.zip。Amoeba安装非常简单，直接解压即可使用，这里将Amoeba解压到/usr/local/amoeba目录下，这样就安装完成了。
+我这里下载的是`amoeba-mysql-3.0.5-RC-distribution.zip`。Amoeba安装非常简单，直接**解压即可使用**，这里将Amoeba解压到/usr/local/amoeba目录下，这样就安装完成了。
 
 ```shell
 [root@ amoeba ~]# yum -y install unzip
@@ -263,7 +263,7 @@ Amoeba的配置文件在本环境下位于/usr/local/amoeba/conf目录下。配�
 		</property>
 		<property name="sqlFunctionFile">${amoeba.home}/conf/functionMap.xml</property>
 		<property name="LRUMapSize">1500</property>
-		<property name="defaultPool">multiPool</property>
+		<property name="defaultPool">master</property>
 
 #这两个选项默认是注销掉的，需要取消注释，这里用来指定前面定义好的俩个读写池
 		
@@ -334,7 +334,7 @@ Error: A fatal exception has occurred. Program will exit.
 ```shell
 [root@ amoeba amoeba]# vim /usr/local/amoeba/jvm.properties
 原来： JVM_OPTIONS="-server -Xms256m -Xmx1024m -Xss196k -XX:PermSize=16m -XX:MaxPermSize=96m"
-改为： JVM_OPTIONS="-server -Xms256m -Xmx1024m -Xss256k -XX:PermSize=16m -XX:MaxPermSize=96m"
+改为： JVM_OPTIONS="-server -Xms256m -Xmx1024m -Xss512k -XX:PermSize=16m -XX:MaxPermSize=96m"
 ```
 
 再次启动
@@ -545,7 +545,7 @@ OK 一切正常，到此表明amoeba实现了mysql的读写分离。
 
 **2.为什么要切片**
 
-当系统数据量发展到一定程度后，往往需要进行数据库的垂直切分和水平切分，以实现负载均衡和性能提升，而数据切分后随之会带来多数据源整合等等问题。如果仅仅从应用程序的角度去解决这类问题，无疑会加重应用程度的复杂度，因此需要一个成熟的第三方解决方案。
+当系统数据量发展到一定程度后，往往需要进行数据库的**垂直切分和水平切分**，以实现负载均衡和性能提升，而数据切分后随之会带来多数据源整合等等问题。如果仅仅从应用程序的角度去解决这类问题，无疑会加重应用程度的复杂度，因此需要一个成熟的第三方解决方案。
 
 Amoeba正是解决此类问题的一个开源方案，Amoeba位于应用程序和数据库服务器之间，相当于提供了一个代理，使得应用程序只要连接一个Amoeba，相当于只是在操作一个单独的数据库服务器，而实际上却是在操作多个数据库服务器，这中间的工作全部交由Amoeba去完成。
 

@@ -416,6 +416,13 @@ fi
 if <条件表达式>;then
     指令
 fi
+
+
+例如：
+if [ 你有钱 ]
+  then
+     我就嫁给你
+fi
 ```
 
 上文中的“<条件表达式>”位置部分，可以使用test、[]、[[]]、(())等条件表达式
@@ -424,43 +431,152 @@ fi
 
 ### 8.2.1 if单分支脚本举例
 
+```shell
+[root@ c6m01 ~]# vim money.sh
+#!/bin/bash
+
+read -p 'please input your money: ' num
+
+if [ $num -ge 1000000 ]
+then
+  echo 'let us get married!!!'
+fi
+```
 
 
 
+### 8.2.2 if语句判断文件存在与否实例
+
+```shell
+[root@ c6m01 ~]# vim file_isexist.sh
+#!/bin/bash
+#此脚本是判断文件是否存在
+
+read -p 'Please input a file name, for example /root/test.txt: ' filename
+
+if [ -f $filename ];then
+  echo 'This file is existed !!!'
+fi
+```
 
 
 
+## 8.2 if双分支
+
+### 8.2.1 if双分支语法分析
+
+```shell
+语法：
+if <条件表达式>
+  then
+    指令
+  else
+    指令
+fi
+
+例如：
+if [ 你有钱 ]
+  then
+     我就嫁给你
+  else
+     我考虑下
+fi
+```
 
 
 
+### 8.2.2 if双分支脚本举例
 
-if语句判断文件存在与否实例
+```shell
+[root@ mysql-master ~]# vim money.sh
+#!/bin/bash
+
+read -p 'please input your money: ' num
+
+if [ $num -ge 1000000 ]
+then
+  echo "Let's get married."
+else
+  echo 'We are not suitable.'
+  #echo -e "\033[31m 'We are not suitable.' \033[0m"
+fi
+
+```
 
 
 
-
-
-
-
-
-
-8.2 if双分支
-
-if双分支脚本举例
-
-if双分支语法分析
-
-if双分支应用实例
+### 8.2.3 if双分支应用实例
 
 a) 判断并进行用户切换实例
 
+```shell
+[root@localhost ~]# cat user.sh
+#!/bin/bash
+
+user=`whoami`
+if [ $user = 'root' ]
+then
+  echo 'this user is root'
+else
+  su - root
+fi
+
+```
+
+
+
 b) 判断系统服务运行状态实例
+
+```shell
+[root@localhost ~]# vim httpd.sh
+#!/bin/bash
+
+pgrep httpd &>/dev/null
+if [ $? -gt 0 ]
+then
+  echo 'httpd未启动,正在启动...'
+  /etc/init.d/httpd start
+  sleep 2
+else
+  echo 'httpd是启动状态...'
+fi
+
+```
+
+
 
 c) 判断系统登录用户数实例
 
+```shell
+#!/bin/bash
+
+num=`who|wc -l`
+if [ $num -gt 3 ]
+then
+  echo "当前系统登录用户数为$num,请及时处理"
+else
+  who
+fi
+
+```
+
+
+
 d) 文件备份实例
 
-8.3 if多分支语句
+
+
+![1570624046868](assets/1570624046868.png)
+
+
+
+
+
+
+
+
+
+## 8.3 if多分支语句
 
 if多分支脚本举例
 
@@ -468,7 +584,15 @@ if多分支语法分析
 
 if多分支httpd服务应用实例
 
-8.4 case语句
+
+
+
+
+
+
+
+
+## 8.4 case语句
 
 case脚本举例
 
