@@ -60,7 +60,7 @@ Shell 和其他编程语言一样，支持多种运算符，包括：
 a=10
 b=20
 
-val=`expr $a + $b`
+val=$(expr $a + $b)
 echo "a + b : $val"
 
 val=`expr $a - $b`
@@ -109,18 +109,18 @@ a 不等于 b
 
 ### 8.1.2 关系运算符
 
-关系运算符只支持数字，不支持字符串，除非字符串的值是数字。
+**关系运算符只支持数字，不支持字符串，除非字符串的值是数字。**
 
 下表列出了常用的关系运算符，假定变量 a 为 10，变量 b 为 20：
 
 | 运算符 | 说明                                                      | 举例                       |
 | :----- | :-------------------------------------------------------- | :------------------------- |
 | -eq    | 检测两个数是否**相等**，相等返回 true。                   | [ $a -eq $b ] 返回 false。 |
-| -ne    | 检测两个数是否不**相等**，不相等返回 true。               | [ $a -ne $b ] 返回 true。  |
-| -gt    | 检测左边的数是否大于右边的，如果是，则返回 true。         | [ $a -gt $b ] 返回 false。 |
-| -lt    | 检测左边的数是否小于右边的，如果是，则返回 true。         | [ $a -lt $b ] 返回 true。  |
-| -ge    | 检测左边的数是否大于**等于**右边的，如果是，则返回 true。 | [ $a -ge $b ] 返回 false。 |
-| -le    | 检测左边的数是否小于**等于**右边的，如果是，则返回 true。 | [ $a -le $b ] 返回 true。  |
+| -ne    | 检测两个数是否**不相等**，不相等返回 true。               | [ $a -ne $b ] 返回 true。  |
+| -gt    | 检测左边的数是否**大于**右边的，如果是，则返回 true。     | [ $a -gt $b ] 返回 false。 |
+| -lt    | 检测左边的数是否**小于**右边的，如果是，则返回 true。     | [ $a -lt $b ] 返回 true。  |
+| -ge    | 检测左边的数是否**大于等于右边**的，如果是，则返回 true。 | [ $a -ge $b ] 返回 false。 |
+| -le    | 检测左边的数是否**小于等于**右边的，如果是，则返回 true。 | [ $a -le $b ] 返回 true。  |
 
 **实例**
 关系运算符实例如下：
@@ -427,6 +427,13 @@ fi
 
 上文中的“<条件表达式>”位置部分，可以使用test、[]、[[]]、(())等条件表达式
 
+**if语句语法规范**
+
+- if与[之间要有空格
+- [  ]与判断条件之间也必须有空格
+- ]与；之间不能有空格
+- 以fi结尾，表示if语句的结束
+
 
 
 ### 8.2.1 if单分支脚本举例
@@ -445,17 +452,16 @@ fi
 
 
 
-### 8.2.2 if语句判断文件存在与否实例
+### 8.2.2 if语句判断文件是否普通文件
 
 ```shell
-[root@ c6m01 ~]# vim file_isexist.sh
+[root@ c6m01 ~]# vim file.sh
 #!/bin/bash
-#此脚本是判断文件是否存在
 
 read -p 'Please input a file name, for example /root/test.txt: ' filename
 
 if [ -f $filename ];then
-  echo 'This file is existed !!!'
+  echo '这是一个普通文件 !!!'
 fi
 ```
 
@@ -564,42 +570,225 @@ fi
 
 d) 文件备份实例
 
+```shell
+[root@ mysql-master ~]# vim backup.sh
 
+#!/bin/bash
 
-![1570624046868](assets/1570624046868.png)
+if [ ! -d /data/backup ]
+then
+  mkdir -p /data/backup
+fi
 
+cp -a /root/* /data/backup
+if [ $? -eq 0 ]
+then
+  echo "拷贝成功"
+else
+  echo "拷贝失败"
+fi
 
-
-
-
-
+```
 
 
 
 ## 8.3 if多分支语句
 
-if多分支脚本举例
+### 8.3.1 if多分支语法分析
 
-if多分支语法分析
+```shell
+if [ 你有钱 ]
+  then
+     我就嫁给你
+elif [ 家庭有背景 ]
+  then
+     也嫁给你
+else
+     我考虑下
+fi
+```
 
-if多分支httpd服务应用实例
+### 8.3.2 if多分支脚本举例
+
+```shell
+[root@ mysql-master mysql]# vim test3.sh
+#!/bin/bash
+
+read -p "请输入你有多少钱: " money
+read -p "请输入你有几套房子: " houses
+
+if [ $money -ge 1000000 ]
+  then
+     echo "我就嫁给你"
+elif [ $houses -ge 3 ]
+  then
+     echo "我也嫁给你"
+else
+     echo "我考虑下"
+fi
+
+```
 
 
 
+### 8.3.3 if多分支httpd服务应用实例
 
+```shell
+[root@ mysql-master ~]# vim pgrep.sh
+#!/bin/bash
 
+ss -lntp|grep httpd &>/dev/null
+if [ $? -eq 0 ]
+then
+  echo "httpd is running..."
+elif [ -f /etc/rc.d/init.d/httpd -a -x /etc/rc.d/init.d/httpd ]
+then
+  /etc/rc.d/init.d/httpd restart
+else
+  echo "no httpd script file"
+fi
 
+```
 
 
 
 ## 8.4 case语句
 
-case脚本举例
+case 语句和 if...elif...else 语句一样都是多分支条件语句，不过和多分支 if 条件语句不同的是，case 语句只能判断一种条件关系，而 if 语句可以判断多种条件关系。
 
-case语句语法分析
+### 8.4.1 case语句语法分析
 
-case语句应用实例
+```shell
+case 变量名 in 
+  值1) 
+   	指令1 
+  	;; 
+  值2) 
+   	指令2 
+  	;; 
+  值3) 
+   	指令3 
+  	;; 
+    *) 
+   	指令3 
+  	;; 
+esac 
+```
+
+**case语句的语法规范**
+
+- 表达式expr按顺序匹配每个模式，一旦匹配成功，则执行该模式后面的命令块，然后退出case语句
+- 如果没有找到匹配的模式，则执行默认值'')''后的命令块， '')''可以没有
+- 模式中可以包含通配符或''|'',如果多个模式对应同一个命令块，则使用“|”将各个模式分开
+- 每个模式必须以右圆括号”）”结束
+- 每个命令块必须以双分号（;;）结束，双分号可独占一行，也可放在最后一个命令的后面
+- 以esac结尾，表示case语句的结束
+
+
+
+### 8.4.2 case脚本举例
+
+例子一：
+
+```shell
+[root@ mysql-master ~]# vim test4.sh
+#!/bin/bash
+#判断用户输入
+read -p "Please choose yes/no: " cho
+#在屏幕上输出"请选择yes/no"，然后把用户选择赋予变量cho
+case $cho in
+#判断变量cho的值
+    "yes")
+    #如果是yes
+        echo "Your choose is yes!"
+        #则执行程序1
+        ;;
+    "no")
+    #如果是no
+        echo "Your choose is no!"
+        #则执行程序2
+        ;;
+    *)
+    #如果既不是yes,也不是no
+    echo "Your choose is error!"
+    #则执行此程序
+    ;;
+esac
+
+```
+
+
+
+例子二：
+
+```shell
+[root@ mysql-master ~]# vim test4.sh
+#!/bin/bash
+
+function food(){
+cat << EOF
+1.米饭
+2.面条
+3.包子
+EOF
+}
+
+food
+read -p 请您输入您今天要吃什么: NUM
+expr $NUM + 1 &>/dev/null
+if [ "$?" -ne 0 ]
+ then
+  echo "请您输入{1|2|3}"
+  exit 1
+fi
+
+case $NUM in
+    1)
+     echo "小二，来一碗米饭"
+    ;;
+    2)
+     echo "小二，来一碗面条"
+    ;;
+    3)
+     echo "小二，来一锅包子"
+    ;;
+esac
+```
+
+
+
+### 8.4.3 case语句应用实例
 
 a) 服务启动脚本
 
+```shell
+#!/bin/bash
+
+#httpd编译安装后的启动脚本
+case $1 in
+  start)
+        echo 'httpd正在启动...'
+        /usr/local/apache2/bin/apachectl -k start &>/dev/null
+        sleep 3
+        ;;
+  stop)
+        echo 'httpd正在停止...'
+        /usr/local/apache2/bin/apachectl -k stop &>/dev/null
+        sleep 3
+        ;;
+  restart)
+        echo 'httpd正在重启...'
+        /usr/local/apache2/bin/apachectl -k stop &>/dev/null
+        /usr/local/apache2/bin/apachectl -k start &>/dev/null
+        sleep 3
+        ;;
+  *)
+        echo "Usage: {start|stop|restart}"
+esac
+
+```
+
+
+
 b) 文件类型判断
+

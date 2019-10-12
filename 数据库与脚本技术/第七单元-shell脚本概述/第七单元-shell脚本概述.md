@@ -31,6 +31,8 @@ Shell 脚本（shell script），是一种为 shell 编写的脚本程序。
 若一行多个命令，用分号（;）分割
 长命令可以使用反斜线字符（\）
 
+
+
 ### 7.2.1 第一个shell脚本
 
 打开文本编辑器(可以使用 vi/vim 命令来创建文件)，新建一个文件 test.sh，扩展名为 sh（sh代表shell），扩展名并不影响脚本执行，见名知意就好，如果你用 php 写 shell 脚本，扩展名就用 php 好了。
@@ -87,9 +89,19 @@ chmod +x ./test.sh  #使脚本具有执行权限
 
 ### 7.3.2 掌握用户自定义变量
 
-i. 在shell 脚本中，所有的变量都由字符串组成，且不需要对变量进行声明。
+1.在shell 脚本中，**所有的变量都由字符串组成**，且不需要对变量进行声明。
 
-ii. 用户变量可以是任何不超过20个的字母、数字或者下划线字符的文本字符串（变量只能以字母或下划线开头）。用户变量是大小写敏感的，因此，变量Var1和变量var1是不同的变量。
+2.用户变量可以是任何不超过20个的**字母、数字或者下划线字符的文本字符串（变量只能以字母或下划线开头）**。用户变量是**大小写敏感的**，因此，变量Var1和变量var1是不同的变量。
+
+命名变量：
+
+变量名=变量值
+
+```shell
+[root@ mysql-master tmp]# name=wjj
+[root@ mysql-master tmp]# echo $name
+wjj
+```
 
 
 
@@ -114,15 +126,15 @@ ii. 用户变量可以是任何不超过20个的字母、数字或者下划线�
 
 #!/bin/bash
 
-echo "Shell 传递参数实例！";
-echo "执行的文件名：$0";
-echo "第一个参数为：$1";
-echo "第二个参数为：$2";
-echo "第三个参数为：$3";
+echo "Shell 传递参数实例！"
+echo "执行的文件名：$0"
+echo "第一个参数为：$1"
+echo "第二个参数为：$2"
+echo "第三个参数为：$3"
 为脚本设置可执行权限，并执行脚本，输出结果如下所示：
 
-$ chmod +x test.sh 
-$ ./test.sh 1 2 3
+chmod +x test.sh 
+./test.sh 1 2 3
 
 Shell 传递参数实例！
 执行的文件名：./test.sh
@@ -144,11 +156,23 @@ x=6
 a="welcome to beijing"
 ```
 
-单引号：所有转移符全部关闭，完整的反括号中的内容
+单引号('')：所有转移符全部关闭，完整的反括号中的内容
 
-双引号：部分转义符关闭，但某些则保留(如：$ )
+双引号("")：部分转义符关闭，但某些则保留(如：$ )
 
-反引号：反引号内荣作为一个系统命令并执行
+反引号(``)：反引号内荣作为一个系统命令并执行
+
+**单引号和双引号的区别：**
+
+```shell
+[root@ mysql-master ~]# name=bawei
+[root@ mysql-master ~]# echo $name
+bawei
+[root@ mysql-master ~]# echo '$name'
+$name
+[root@ mysql-master ~]# echo "$name"
+bawei
+```
 
 
 
@@ -167,7 +191,7 @@ echo $name
 
 用法:
 
-read -p “提示信息” 变量名
+read -p "提示信息"  变量名
 
 例子:
 
@@ -177,12 +201,12 @@ read -p "请输入你的用户名: " username
 
 练习：模拟用户登录并显示登录用户
 
-```
+```shell
 [root@ mysql-master ~]# vim login.sh
 #!/bin/bash
 
-read -p "请输入你的用户名: " username
-read -p "请输入你的密码: " userpasswd
+read -p "请输入用户名: " username
+read -p "请输入密码: " userpasswd
 echo -e "Login success,Welcome,$username"
 ```
 
@@ -251,9 +275,9 @@ cut  -d':' -f1,3   /etc/passwd
 
 ### 7.4.2 sort
 
-Linux sort命令用于将文本文件内容加以排序。
+Linux sort命令用于将**文本文件内容加以排序**。
 
-sort可针对文本文件的内容，以行为单位来排序。
+sort可针对文本文件的内容，**以行为单位来排序**。
 
 **语法**
 
@@ -272,21 +296,22 @@ sort [-bcdfimMnr][-o<输出文件>][-t<分隔字符>][+<起始栏位>-<结束栏
 | -i                     | 排序时，除了040至176之间的ASCII字符外，忽略其他的字符。  |
 | -m                     | 将几个排序好的文件进行合并。                             |
 | -M                     | 将前面3个字母依照月份的缩写进行排序。                    |
-| -n                     | 依照数值的大小排序。                                     |
+| **-n**                 | **依照数值的大小排序。**                                 |
 | -o<输出文件>           | 将排序后的结果存入指定的文件。                           |
-| -r                     | 以相反的顺序来排序。                                     |
+| **-r**                 | **以相反的顺序来排序。**                                 |
+| **-u**                 | **去除重复行**                                           |
 | -t<分隔字符>           | 指定排序时所用的栏位分隔字符。                           |
 | +<起始栏位>-<结束栏位> | 以指定的栏位来排序，范围由起始栏位到结束栏位的前一栏位。 |
 
 **实例**
 
-1.查看/etc/passwd里的内容并且正向排序
+1.查看/etc/passwd里的内容并且**正向排序**
 
 ```
 sort /etc/passwd
 ```
 
-2.在输出行中去除重复行
+2.在输出行中**去除重复行**
 
 sort的-u选项
 
@@ -430,7 +455,7 @@ orange:20:3.4
 
 那么我想以水果数量来排序，也就是以第二列来排序，如何利用sort实现？
 
-幸好，sort提供了-t选项，后面可以设定间隔符。（是不是想起了cut和paste的-d选项，共鸣～～）
+幸好，**sort提供了-t选项，后面可以设定间隔符**。（是不是想起了cut和paste的-d选项，共鸣～～）
 
 指定了间隔符之后，就可以用-k来指定列数了。
 
@@ -448,7 +473,7 @@ pear:90:2.3
 
 ### 7.4.3 uniq
 
-uniq命令可以删除排序过的文件中的重复行，因此uniq经常和sort合用。也就是说，为了使uniq起作用，所有的重复行必须是相邻的。
+uniq命令可以**删除排序过的文件中的重复行**，因此uniq经常和sort合用。也就是说，为了使uniq起作用，所有的重复行必须是相邻的。
 
 选项与参数：
 
@@ -547,10 +572,10 @@ wc命令的功能为统计指定文件中的字节数、字数、行数，并将
 find+mv(cp)经典例题
 
 ```
-mv  $(find /data/ -type f -size +1M -mtime +7 "*log")  /tmp
+mv  $(find /data/ -type f -size +1M -mtime +7 -name "*log")  /tmp/
 find /data/ -type f -size +1M -mtime +7 -name "*log" -exec mv {} /tmp/ \;
-find /data/ -type f -size +1M -mtime +7 -name "*.log" |xargs mv -t  /tmp
-find /data/ -type f -size +1M -mtime +7 -name "*.log" |xargs -i mv {} /tmp
+find /data/ -type f -size +1M -mtime +7 -name "*.log" |xargs mv -t  /tmp/
+find /data/ -type f -size +1M -mtime +7 -name "*.log" |xargs -i mv {} /tmp/
 ```
 
 查找文件
