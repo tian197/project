@@ -603,6 +603,9 @@ if [ 你有钱 ]
 elif [ 家庭有背景 ]
   then
      也嫁给你
+elif [ 有权 ]
+  then
+     也嫁给你
 else
      我考虑下
 fi
@@ -639,13 +642,13 @@ fi
 
 ss -lntp|grep httpd &>/dev/null
 if [ $? -eq 0 ]
-then
-  echo "httpd is running..."
+  then
+    echo "httpd正在运行中..."
 elif [ -f /etc/rc.d/init.d/httpd -a -x /etc/rc.d/init.d/httpd ]
-then
-  /etc/rc.d/init.d/httpd restart
+  then
+    /etc/rc.d/init.d/httpd restart
 else
-  echo "no httpd script file"
+  echo "没有httpd的启动脚本"
 fi
 
 ```
@@ -693,28 +696,20 @@ esac
 ```shell
 [root@ mysql-master ~]# vim test4.sh
 #!/bin/bash
-#判断用户输入
+
 read -p "Please choose yes/no: " cho
-#在屏幕上输出"请选择yes/no"，然后把用户选择赋予变量cho
+
 case $cho in
-#判断变量cho的值
-    "yes")
-    #如果是yes
+    yes)
         echo "Your choose is yes!"
-        #则执行程序1
         ;;
-    "no")
-    #如果是no
+    no)
         echo "Your choose is no!"
-        #则执行程序2
         ;;
     *)
-    #如果既不是yes,也不是no
-    echo "Your choose is error!"
-    #则执行此程序
-    ;;
+    	echo "Your choose is error!"
+    	;;
 esac
-
 ```
 
 
@@ -725,7 +720,7 @@ esac
 [root@ mysql-master ~]# vim test4.sh
 #!/bin/bash
 
-function food(){
+food(){
 cat << EOF
 1.米饭
 2.面条
@@ -734,9 +729,9 @@ EOF
 }
 
 food
-read -p 请您输入您今天要吃什么: NUM
-expr $NUM + 1 &>/dev/null
-if [ "$?" -ne 0 ]
+read -p "请您输入您今天要吃什么: " NUM
+expr $NUM + 1 &>/dev/null  #这里加1，判断输入的是不是整数。
+if [ "$?" -ne 0 ]        #如果不等于零，代表输入不是整数。
  then
   echo "请您输入{1|2|3}"
   exit 1
