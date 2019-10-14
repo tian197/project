@@ -134,7 +134,8 @@ done
 
 ```shell
 #!/bin/sh
-for i in 1 2 3 4 5;do
+for i in 1 2 3 4 5
+do
  if [ $i == 4 ];then
   echo "hello"
  else
@@ -170,7 +171,7 @@ cat /proc/sys/kernel/random/uuid |cut -c 1-8
 方法四：
 
 ```shell
-openssl rand -base64 4
+openssl rand -base64 6
 ```
 
  
@@ -262,10 +263,21 @@ do
 done <./a.txt
 
 用法二：
+
 cat ./a.txt|
 while read line
 do
 	echo $line 
+done
+
+
+#for实现的读取文件并着行打印
+#!/bin/bash
+
+content=$(cat ./a.txt)
+for i in $content
+do
+   echo $i
 done
 ```
 
@@ -441,19 +453,7 @@ echo ${nums[3]}
 
 表示输出 nums 数组的第 3 个元素。
 
-使用
-
-```
-@
-```
-
-或
-
-```
-*
-```
-
-可以获取数组中的所有元素，例如：
+**使用@和*可以获取数组中的所有元素，例如：**
 
 ```
 ${nums[*]}
