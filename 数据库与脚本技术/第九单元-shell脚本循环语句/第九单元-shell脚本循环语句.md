@@ -8,13 +8,13 @@
 
 # 第九单元-shell脚本循环语句
 
-​	循环语句常用于重复执行一条命令或一组命令等，直到达到结束条件后，则终止执行。在Shell中常见的循环命令有while、until、for和select等。
+​	循环语句常用于**重复执行一条命令或一组命令等**，直到达到结束条件后，则终止执行。在Shell中常见的循环命令有while、until、for和select等。
 
 
 
 ## 9.1 for循环语句
 
-​	for循环语句与while循环诗句类似，但for循环语句主要用于有限次的循环场景，while主要无限次循环的场景，如守护进程。
+​	for循环语句与while循环语句类似，但for循环语句主要用于**有限次的循环场景**，while主要**无限次循环的场景**，如守护进程。
 
 
 
@@ -87,14 +87,11 @@ done
 
 ```shell
 示例一：for循环创建
-
 #!/bin/bash
-ULIST=$(cat /root/users.txt)      ##/root/users.txt  里面存放的是用户名，一个名一行
-for UNAME in $ULIST
+for i in  $(seq  1   10)
 do
-    useradd $UNAME
-    echo "123456" | passwd --stdin $UNAME
-
+    useradd www$i   # www$i 此处为字符串拼接
+    echo "123456" | passwd --stdin www$i
 done
 
 示例二：while循环创建
@@ -120,9 +117,9 @@ do
 	if [ $? -eq 0 ]
     then
        echo "add user is ok"
-       p=`uuidgen`
+       p=$(uuidgen)
        echo $p|passwd --stdin $u &>/dev/null
-       echo "$u:$p" >>/tmp/userlist
+       echo "$u:$p" >>/tmp/user.list
      else
        echo "add user is error"
     fi
