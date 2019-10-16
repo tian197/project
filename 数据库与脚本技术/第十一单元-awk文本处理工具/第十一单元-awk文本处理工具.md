@@ -368,6 +368,125 @@ awk中字母会被认为是变量，如果真的要给一个变量赋值使用�
 
 ## 11.2 awk应用举例
 
+创建练习文件：
+
+```
+[root@ mysql-master ~]# vim data.txt
+Beth    4.00    0
+Dan     3.75    0
+kathy   4.00    10
+Mark    5.00    20
+Mary    5.50    22
+Susie   4.25    18
+```
+
+
+
+### 11.2.1 简单输出
+
+#### **1. 打印每一行**
+
+如果一个动作没有任何模式, 这个动作会对所有输入的行进行操作. print 语句用来打印(输出)当前输入的行, 所以程序
+
+```shell
+[root@ mysql-master ~]# awk '{print}' data.txt
+Beth	4.00	0
+Dan	3.75	0
+kathy	4.00	10
+Mark	5.00	20
+Mary	5.50	22
+Susie	4.25	18
+```
+
+会输出所有输入的内容到标准输出. 由于 $0 表示整行,
+
+```shell
+[root@ mysql-master ~]# awk '{print $0}' data.txt
+Beth	4.00	0
+Dan	3.75	0
+kathy	4.00	10
+Mark	5.00	20
+Mary	5.50	22
+Susie	4.25	18
+```
+
+
+
+#### **2. 打印特定字段**
+
+```shell
+[root@ mysql-master ~]#  awk '{print$1,$3}' data.txt
+Beth 0
+Dan 0
+kathy 10
+Mark 20
+Mary 22
+Susie 18
+```
+
+在 print 语句中被逗号分割的表达式, 在默认情况下他们将会用一个空格分割 来输出. 每一行 print 生成的内容都会以一个换行符作为结束. 但这些默认行 为都可以自定义。
+
+
+
+#### **3. NF, 字段数量**
+
+依次打印出每一行的字段数量, 第一个字段的值, 最后一个字段的值：
+
+```shell
+[root@ mysql-master ~]# awk '{ print NF, $1, $NF }' data.txt
+3 Beth 0
+3 Dan 0
+3 kathy 10
+3 Mark 20
+3 Mary 22
+3 Susie 18
+```
+
+
+
+#### 4. 计算和打印
+
+```shell
+[root@ mysql-master ~]# awk '{print $1, $2 * $3}' data.txt
+Beth 0
+Dan 0
+kathy 40
+Mark 100
+Mary 121
+Susie 76.5
+```
+
+
+
+#### 5. 打印行号
+
+Awk提供了另一个内建变量, 叫做 NR, 它会存储当前已经读取了多少行的计数. 我们可以使用 NR 和 $0 给 emp.data 的每一行加上行号:
+
+```shell
+[root@ mysql-master ~]# awk '{print NR,$0}' data.txt
+1 Beth	4.00	0
+2 Dan	3.75	0
+3 kathy	4.00	10
+4 Mark	5.00	20
+5 Mary	5.50	22
+6 Susie	4.25	18
+```
+
+
+
+#### 6. 在输出中添加内容
+
+当然也可以在字段中间或者计算的值中间打印输出想要的内容:
+
+```shell
+[root@ mysql-master ~]# awk '{print "total pay for", $1, "is", $2 * $3}' data.txt
+total pay for Beth is 0
+total pay for Dan is 0
+total pay for kathy is 40
+total pay for Mark is 100
+total pay for Mary is 121
+total pay for Susie is 76.5
+```
 
 
 
@@ -375,11 +494,96 @@ awk中字母会被认为是变量，如果真的要给一个变量赋值使用�
 
 
 
+## 11.3 awk流程控制语句
 
-awk流程控制语句
+Awk为选择提供了一个 if-else 语句，以及为循环提供了几个语句，所以都效仿C语言中对应的控制语句。它们仅可以在动作中使用。
 
-if-else语句
+### 11.3.1 if-else语句
 
-while语句
+格式：
 
-for循环语句
+if（条件）{语句；语句} else {语句1；语句2}
+
+如果statement只有一条语句，{}可以不写
+
+以冒号为分隔符，判断第一个字段，如果为root，则显示用户为administrator，否则显示用户问common user
+
+```shell
+awk -F: '{if($3==0){print $1,"is administrator."}else {print $1,"is common user"}}' /etc/passwd
+```
+
+
+
+**1. 编写uid大于500的用户个数**
+
+```shell
+awk -F: -v count=0 '{if($3>500) {count++}}END{print "uid大于500的用户数量：",count}' /etc/passwd
+
+输出：
+
+uid大于500的用户数量： 20
+```
+
+
+
+**2. 判断系统的bash用户和nologin用户**
+
+```
+awk -v num1=0 -v num2=0 -F: '/bash$/ || /nologin$/{if($7=="/bin/bash"){num1++} else {num2++}}END{print "bash用户数量：",num1,"nologin用户数量：",num2}' /etc/passwd
+
+输出：
+
+bash用户数量： 23 nologin用户数量： 21
+```
+
+
+
+### 11.3.2 while语句
+
+格式：
+
+while(条件) {语句1;语句2;.....}
+
+
+
+**1. passwd前3行进行输出，输出3次**
+
+```shell
+[root@ mysql-master ~]# head -n 3 /etc/passwd | awk '{i=1;while(i<=3){print $0; i++}}'
+
+root:x:0:0:root:/root:/bin/bash
+root:x:0:0:root:/root:/bin/bash
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+bin:x:1:1:bin:/bin:/sbin/nologin
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+```
+
+
+
+**2.以冒号为分割符，判断每一行的每一个字段的长度如果大于4，则显之**
+
+```shell
+[root@ mysql-master ~]# head -n 3 /etc/passwd | awk -F: '{i=1;while(i<=7){if(length($i)>4){print $i};i++}}'
+
+/root
+/bin/bash
+/sbin/nologin
+daemon
+daemon
+/sbin
+/sbin/nologin
+```
+
+
+
+3.统计test.txt的文件长度大小为5的单词
+
+
+
+
+
+### 11.3.3 for循环语句
