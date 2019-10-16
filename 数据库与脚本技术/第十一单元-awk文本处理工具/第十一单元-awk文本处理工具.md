@@ -637,7 +637,23 @@ awk 'BEGIN{ total=0; for(i=0;i<=100;i++) {total+=i}; print total}'
 
 
 
+**shell的for循环与awk的for循环的性能比较：**
 
+```shell
+[root@ c6m01 ~]# time (awk 'BEGIN{ total=0;for(i=0;i<=10000;i++){total+=i;}print total;}')
+50005000
+
+real	0m0.002s
+user	0m0.000s
+sys		0m0.001s
+
+[root@ c6m01 ~]# time(total=0;for i in $(seq 10000);do total=$(($total+i));done;echo $total;)
+50005000
+
+real	0m0.075s
+user	0m0.071s
+sys		0m0.001s
+```
 
 
 
