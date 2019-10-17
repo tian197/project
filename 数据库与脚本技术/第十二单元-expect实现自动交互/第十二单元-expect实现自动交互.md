@@ -224,7 +224,7 @@ yum install -y ftp vsftpd
 
 **脚本示例：**
 
-此脚本为模拟，登录ftp，并下载ftp目录中的文件到本地目录。
+此脚本为模拟登录ftp，并下载ftp目录中的文件到本地目录。
 
 1.在创建ftp的pub目录创建测试文件
 
@@ -252,3 +252,4 @@ send "exit\r"
 
 interact
 ```
+
