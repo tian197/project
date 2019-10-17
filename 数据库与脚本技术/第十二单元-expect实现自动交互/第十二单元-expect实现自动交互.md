@@ -53,7 +53,7 @@ expect脚本常常以`.exp`或者`.ex`结束。
 | exp_continue     | 表示问题回答完毕退出 expect 环境                             |                                            |
 | interact         | 表示问题回答完毕留在交互界面                                 |                                            |
 | set              | 定义变量                                                     |                                            |
-| set timeout -1   | 设置超时方式为永远不超时                                     |                                            |
+| set timeout -1   | 设置超时方式为永不超时                                       |                                            |
 | set timeout 30   | 设置超时时间为30秒                                           |                                            |
 | [lindex $argv 0] | 获取expect脚本的第1个参数                                    |                                            |
 | [lindex $argv 1] | 获取expect脚本的第2个参数                                    |                                            |
@@ -76,18 +76,14 @@ expect "*assword:" { send "$password\r" }
 ```shell
 set password 123456
 expect {
-      "*assword:" { send "$password\r" }
       "(yes/no)?" { send "yes\r"; exp_continue }
+      "*assword:" { send "$password\r" }
 }
 ```
 
 当输出中包含(yes/no)?时，输出yes和回车,同时重新执行此多分支语句。
 
 当输出中匹配*assword:时，输出password变量的数值和回车。
-
-
-
-
 
 
 
@@ -164,12 +160,14 @@ interact
 #!/usr/bin/expect
 
 set timeout 10
-spawn scp -P22 root@10.0.0.20:/root/install.log /home
+spawn scp -P22 root@10.0.0.22:/root/install.log /home
 expect "*password*"
 send "123456\r"
 
 interact
 ```
+
+
 
 **脚本示例二：传参版**
 
@@ -214,17 +212,44 @@ interact
 
 
 
+**安装ftp服务端和客户端**
 
+```shell
+yum install -y ftp vsftpd
 
-脚本示例：
+/etc/init.d/vsftpd restart
 
+```
 
+注意：关闭防火墙和selinux
 
-![1571278728155](assets/1571278728155.png)
+**脚本示例：**
 
+此脚本为模拟，登录ftp，并下载ftp目录中的文件到本地目录。
 
+1.在创建ftp的pub目录创建测试文件
 
+```
+echo "这是ftp测试文件内容" >>/var/ftp/pub/ftp.txt
+```
 
+2.代码
 
+```shell
+#!/usr/bin/expect
 
+set timeout 10
+spawn ftp 10.0.0.21
+expect 	"*Name*"
+send "ftp\r"
+expect "*Password:*"
+send "\r"
+expect "ftp>"
+send "cd pub\r"
+expect "ftp>"
+send "get ftp.txt\r"
+expect "Transfer complete"
+send "exit\r"
 
+interact
+```
