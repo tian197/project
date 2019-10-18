@@ -171,7 +171,7 @@ job 5 at 2019-10-17 20:44
 
 **3.使用实例**
 
-**实例1：三天后的下午 5 点锺执行 /bin/ls**
+**实例1：三天后的下午 5 点执行 /bin/ls**
 
 命令：
 
@@ -196,14 +196,14 @@ job 7 at 2019-10-20 17:00
 命令：
 
 ```
-at 17:20 tomorrow
+at 17:00 tomorrow
 ```
 
 输出：
 
 ```shell
-[root@ localhost ~]# at 17:20 tomorrow
-at> date >./date/.log
+[root@ localhost ~]# at 17:00 tomorrow
+at> date >./date.log
 at> <EOT>
 job 8 at 2019-10-18 17:20
 ```
@@ -239,7 +239,7 @@ atq 或 at -l
 命令：
 
 ```
-atrm 7
+atrm 7 或 at -d 作业号
 ```
 
 输出：
@@ -279,7 +279,7 @@ umask 22此处省略n个字符
 
 ## 13.2 计划任务crond命令
 
-**crontab**命 令常见于Unix和Linux的操作系统之中，用于设置周期性被执行的指令。该命令从标准输入设备读取指令，并将其存放于“crontab”文件中，以供 之后读取和执行。通常，crontab储存的指令被守护进程激活。crond 常常在后台运行，每一分钟检查是否有预定的作业需要执行。这类作业一般称为cron jobs。
+**crontab**命令常见于Unix和Linux的操作系统之中，用于设置**周期性被执行的指令**。该命令从标准输入设备读取指令，并将其存放于“crontab”文件中，以供之后读取和执行。通常，crontab储存的指令被守护进程激活。crond 常常在后台运行，每一分钟检查是否有预定的作业需要执行。这类作业一般称为cron jobs。
 
 ### 13.2.1 安装配置
 
@@ -306,7 +306,7 @@ service crond status  #查看服务状态
 在CentOS系统中加入开机自动启动: 
 
 ```
-chkconfig --level 345 crond on
+chkconfig crond on
 ```
 
 cron 的主配置文件是 /etc/crontab，它包括下面几行：
@@ -335,15 +335,15 @@ HOME=/
 crontab[-u <用户名称>][配置文件] 或 crontab [-u <用户名称>][-elr]
 ```
 
-解释：cron 是一个常驻服务，它提供计时器的功能，让用户在特定的时间得以执行预设的指令或程序。只要用户会编辑计时器的配置文件，就可以使 用计时器的功能。其配置文件格式如下：Minute Hour Day Month DayOFWeek Command
+解释：cron 是一个常驻服务，它提供计时器的功能，让用户在特定的时间得以执行预设的指令或程序。只要用户会编辑计时器的配置文件，就可以使用计时器的功能。其配置文件格式如下：`Minute Hour Day Month DayOFWeek Command`
 
 **参数说明：**
 
 ```
 crontab -u //设定某个用户的cron服务，一般root用户在执行这个命令的时候需要此参数
-crontab -l //列出某个用户cron服务的详细内容
+crontab -l //列出某个用户cron服务的详细内容   #常用
 crontab -r //删除某个用户的cron服务
-crontab -e //编辑某个用户的cron服务
+crontab -e //编辑某个用户的cron服务    #常用
 
 比如说root查看自己的cron设置：crontab -u root -l
 再例如，root想删除fred的cron设置：crontab -u fred -r
@@ -354,8 +354,8 @@ crontab -e //编辑某个用户的cron服务
 **格式:**
 
 ```
-* 	* 	* 	* 	* 	command
-分　时　 日　月　 周　 命令
+* * * * * command
+分　时　 日　 月　 周　  命令
 
 第1列表示分钟1～59 每分钟用*或者 */1表示
 第2列表示小时1～23（0表示0点）
@@ -578,6 +578,8 @@ $ jobs -r
 
 **fg**
 将后台中的命令调至前台继续运行
+
+
 
 补充：Shell重定向＆>file、2>&1、1>&2的区别
 
