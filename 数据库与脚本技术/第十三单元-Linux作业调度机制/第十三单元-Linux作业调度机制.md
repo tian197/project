@@ -383,13 +383,13 @@ crontab -e //编辑某个用户的cron服务    #常用
 上面的例子表示在每天18 : 00至23 : 00之间每隔30分钟重启apache。
 
 0 23 * * 6 /etc/init.d/httpd restart
-上面的例子表示每星期六的11 : 00 pm重启apache。
+上面的例子表示每星期六的23 : 00重启apache。
 
 * */1 * * * /etc/init.d/httpd restart
 每一小时重启apache
 
-* 23-7/1 * * * /etc/init.d/httpd restart
-晚上11点到早上7点之间，每隔一小时重启apache
+* 20-23/1 * * * /etc/init.d/httpd restart
+晚上20点到23点之间，每隔一小时重启apache
 
 0 11 4 * mon-wed /etc/init.d/httpd restart
 每月的4号与每周一到周三的11点重启apache
