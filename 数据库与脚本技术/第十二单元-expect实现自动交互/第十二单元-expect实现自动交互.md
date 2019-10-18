@@ -222,6 +222,20 @@ yum install -y ftp vsftpd
 
 注意：关闭防火墙和selinux
 
+```shell
+临时关闭
+[root@ c6m01 ~]# /etc/init.d/iptables stop
+[root@ c6m01 ~]# setenforce 0
+
+永久关闭
+[root@ c6m01 ~]# chkconfig iptables off
+[root@ c6m01 ~]# vim /etc/selinux/config
+
+SELINUX=disabled
+```
+
+
+
 **脚本示例：**
 
 此脚本为模拟登录ftp，并下载ftp目录中的文件到本地目录。
