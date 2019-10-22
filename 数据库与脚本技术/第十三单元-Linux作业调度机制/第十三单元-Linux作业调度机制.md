@@ -432,7 +432,7 @@ which service
 52 10 * * * /sbin/service httpd restart
 ```
 
-
+特别注意：crontab中，无论如何都要用全路径，无论是crontab时间的定义中，还是可执行脚本中的命令。
 
 
 
