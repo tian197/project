@@ -91,7 +91,7 @@ ssh root@10.0.0.22 "mkdir -p /opt/test;cd /opt/test;touch www.txt"
 注意：`touch.sh`此脚本在本地服务器。
 
 ```shell
-[root@ localhost ~]# cat touch.sh
+[root@ localhost ~]# vim /opt/scripts/touch.sh
 #!/bin/bash
 
 mkdir -p /opt/test{01..10}
