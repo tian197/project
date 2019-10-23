@@ -1,4 +1,4 @@
-#### LAMP源码安装 ####
+﻿#### LAMP源码安装 ####
 
 
 ####编译安装apache（httpd）####
@@ -6,6 +6,7 @@
 yum -y install gcc gcc-c++
 
 #上传httpd源码包，并解压。
+#wget http://mirrors.tuna.tsinghua.edu.cn/apache//httpd/httpd-2.4.41.tar.gz
 tar -xvf httpd-2.2.9.tar.gz
 cd httpd-2.2.9
 ./configure --enable-so --prefix=/usr/local/apache2
