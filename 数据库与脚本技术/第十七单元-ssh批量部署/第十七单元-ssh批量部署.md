@@ -114,8 +114,7 @@ touch /opt/test01/www{01..10}
 ## 17.3 脚本源码包安装apache
 
 ```shell
-vim /opt/scripts/install_apache.sh
-
+[root@ c6m01 scripts]# vim /opt/scripts/install_apache.sh
 #!/bin/bash
 yum -y install gcc gcc-c++
 
@@ -125,6 +124,7 @@ cd /root/httpd-2.2.9
 ./configure --enable-so --prefix=/usr/local/apache2
 make
 make install
+
 ```
 
 
@@ -280,12 +280,3 @@ $1;;
 esac
 
 ```
-
-
-
-
-
-
-
-
-
