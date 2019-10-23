@@ -126,7 +126,24 @@ make
 make install
 ```
 
+分装为函数：
 
+```
+[root@ c6m01 scripts]# cat install_httpd.sh
+#!/bin/bash
+yum -y install gcc gcc-c++
+
+httpd_setup(){
+	tar -xvf /root/httpd-2.2.9.tar.gz -C /root
+	cd /root/httpd-2.2.9
+	./configure --enable-so --prefix=/usr/local/apache2
+	make
+	make install
+}
+
+httpd_setup
+
+```
 
 
 
