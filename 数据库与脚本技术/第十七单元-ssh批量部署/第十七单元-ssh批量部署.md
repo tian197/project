@@ -197,6 +197,7 @@ case "$1" in
 		 ;;
 	"restart")
 		 stop
+		 sleep 3
 		 start
 		 ;;
 	"status")
