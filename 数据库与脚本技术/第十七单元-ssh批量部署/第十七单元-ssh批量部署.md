@@ -111,11 +111,12 @@ touch /opt/test01/www{01..10}
 
 
 
-
-
-### 17.3 脚本源码包安装apache
+## 17.3 脚本源码包安装apache
 
 ```shell
+
+
+
 yum -y install gcc gcc-c++
 
 #上传httpd源码包，并解压。
@@ -130,6 +131,153 @@ make install
 
 
 
+## 17.4 apache启动脚本
+
+### 17.4.1 实现思路与流程分析：
+
+设置变量以存放apache启动命令工具à定义start、stop、restart、status等各个函数à在case语句中调用各个函数
+
+
+
+### 17.4.2 编程实现与调试
+
+**基础版：**
+
+```shell
+[root@ c6m01 ~]# vim /etc/init.d/httpd2
+#!/bin/bash
+
+apache="/usr/local/apache2/bin/apachectl"
+lock="/usr/local/apache2/httpd.lock"
+
+start (){
+	if [ -e $lock ]
+	then
+	    echo "httpd2服务已启动"
+	else
+	    $apache -k start &>/dev/null
+	    echo "正在启动httpd2服务"
+	    touch $lock
+	fi
+}
+
+stop (){
+	$apache -k stop &>/dev/null
+	echo "正在关闭httpd2服务"
+	rm -f $lock
+}
+
+restart (){
+	stop
+	start
+}
+
+status(){
+	if [ -e $lock ];then
+		echo "httpd2服务已启动"
+	else
+		echo "httpd2服务已停止"
+	fi
+}
+
+case "$1" in
+	"start")
+		start
+		;;
+	"stop")
+		 stop
+		 ;;
+	"restart")
+		 restart
+		 ;;
+	"status")
+		status
+		;;
+	*)
+		echo "usage:service apache start|stop|restart|status"
+		;;
+esac
+
+[root@ c6m01 ~]# chmod +x /etc/init.d/httpd2
+```
+
+
+
+**优化版：**优化后的脚本调用了系统函数库，更接近与系统脚本。
+
+```shell
+[root@ c6m01 ~]# cat /etc/init.d/httpd2
+#!/bin/bash
+# apache - this script starts and stops the apache daemon
+# chkconfig:   - 85 15
+# description:  Apache is an HTTP(S) server
+# processname: apache
+# config:      /usr/local/apache/conf/apache.conf
+# Source function library.
+
+. /etc/rc.d/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+# Check that networking is up.
+
+[ "$NETWORKING" = "no" ] && exit 0
+apache="/usr/local/apache2/bin/apachectl"
+prog=$(basename $apache)
+APACHE_CONF_FILE="/usr/local/apache2/conf/httpd.conf"
+lockfile=/var/lock/subsys/apache
+
+start() {
+    [ -x $apache ] || exit 5
+    [ -f $APACHE_CONF_FILE ] || exit 6
+    echo -n $"Starting $prog: "
+    echo_success
+    echo
+    $apache start &>/dev/null
+    retval=$?
+    [ $retval -eq 0 ] && touch $lockfile
+    return $retval
+}
+stop() {
+    echo -n $"Stopping $prog: "
+    echo_success
+    echo
+    $apache stop &>/dev/null
+    retval=$?
+    [ $retval -eq 0 ] && rm -f $lockfile
+    return $retval
+}
+restart() {
+    stop
+    start
+}
+status()
+{
+        if [ -e $lockfile ];then
+                echo "服务已启动"
+        else
+                echo "服务已停止"
+        fi
+}
+case "$1" in
+    start)
+        $1
+        ;;
+    stop)
+        $1
+        ;;
+    restart)
+        $1
+        ;;
+    status)
+$1;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart}"
+        exit 2
+esac
+
+```
 
 
 
@@ -139,39 +287,3 @@ make install
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-使用脚本进行源码包安装apache
-
-实现步骤分析
-
-安装脚本编程
-
-ssh无密码登录
-
-ssh无密码登录原理
-
-ssh无密码登录服务实现
-
-使用ssh无密码登录实现批量部署
-
-综合脚本调试
-
-apache启动脚本
-
-实现思路与流程分析
-
-脚本编程测试
-
-启动脚本的优化
