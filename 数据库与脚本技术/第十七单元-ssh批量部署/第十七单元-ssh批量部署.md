@@ -98,14 +98,14 @@ mkdir -p /opt/test{01..10}
 touch /opt/test01/www{01..10}
 
 
-[root@ localhost ~]# ssh root@10.0.0.22 </root/touch.sh
+[root@ c6m01 ~]# ssh root@10.0.0.22 < "/opt/scripts/touch.sh"
 ```
 
 （2）执行远程脚本
 
 注意：`del.sh`此脚本在远程服务器。
 
-```
+```shell
 [root@ localhost ~]# ssh root@10.0.0.22 "sh /root/del.sh"
 ```
 
@@ -115,9 +115,7 @@ touch /opt/test01/www{01..10}
 
 ### 17.3 脚本源码包安装apache
 
-
-
-```
+```shell
 yum -y install gcc gcc-c++
 
 #上传httpd源码包，并解压。
