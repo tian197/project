@@ -260,6 +260,7 @@ stop() {
 }
 restart() {
     stop
+    sleep 3
     start
 }
 status()
