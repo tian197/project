@@ -210,9 +210,9 @@ esac
 [root@ c6m01 ~]# chmod +x /etc/init.d/httpd2
 ```
 
+**优化版：**
 
-
-**优化版：**优化后的脚本调用了系统函数库，更接近与系统脚本。
+优化后的脚本调用了系统函数库，更接近与系统脚本。
 
 ```shell
 [root@ c6m01 ~]# cat /etc/init.d/httpd2
