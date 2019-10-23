@@ -20,7 +20,7 @@
 
 ### 17.1.2 批量部署的思路
 
-在公司中要实现全自动批量部署，目前使用最多的就是通过ssh服务的无密码登录，因此首先应该在所有的服务器上配置ssh的无密码登录服务；之后将手动安装服务的命令编写成脚本并将脚本与软件包通过scp服务远程传输到各个服务器，并在运程服务器上执行脚本即可完成指定部署
+在公司中要实现全自动批量部署，目前使用最多的就是通过ssh服务的无密码登录，因此首先应该在所有的服务器上配置ssh的无密码登录服务；之后将手动安装服务的命令编写成脚本并将脚本与软件包通过scp服务远程传输到各个服务器，并在运程服务器上执行脚本即可完成指定部署。
 
 
 
@@ -38,7 +38,7 @@
 
 ### 17.1.3 生成秘钥并批量分发
 
-**交互生成密钥并分发：**
+**交互生成密钥对并分发公钥：**
 
 需要输入几次回车
 
@@ -52,16 +52,16 @@ ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.22
 **免交互批量分发公钥：**
 
 ```shell
-!/bin/bash
-yum -y install sshpass
+#!/bin/bash
+yum -y install sshpass &>/dev/null
 UserName=root
 IP="10.0.0."
 #创建密钥
-ssh-keygen -t dsa -f ~/.ssh/id_dsa -P "" &>/dev/null
+ssh-keygen -t dsa -f ~/.ssh/id_rsa -P "" &>/dev/null
 #分发公钥
 for i in 22 23
   do
-    sshpass -p "123456" ssh-copy-id -i ~/.ssh/id_dsa.pub "-p 22 -o StrictHostKeyChecking=no $UserName@$IP$i" &>/dev/null
+    sshpass -p "123456" ssh-copy-id -i ~/.ssh/id_rsa.pub "-p 22 -o StrictHostKeyChecking=no $UserName@$IP$i" &>/dev/null
 done
 ```
 
