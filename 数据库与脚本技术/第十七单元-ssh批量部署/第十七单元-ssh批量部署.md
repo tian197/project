@@ -135,7 +135,9 @@ make install
 
 ### 17.4.1 实现思路与流程分析：
 
-设置变量以存放apache启动命令工具à定义start、stop、restart、status等各个函数à在case语句中调用各个函数
+- 设置变量以存放apache启动命令
+- 定义start、stop、restart、status等各个函数
+- 在case语句中调用各个函数
 
 
 
