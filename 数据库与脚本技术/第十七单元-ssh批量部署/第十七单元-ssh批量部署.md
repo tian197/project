@@ -169,25 +169,15 @@ apache="/usr/local/apache2/bin/apachectl"
 lock="/usr/local/apache2/httpd.lock"
 
 start (){
-	if [ -e $lock ]
-	then
-	    echo "httpd2服务已启动"
-	else
-	    $apache -k start &>/dev/null
-	    echo "正在启动httpd2服务"
-	    touch $lock
-	fi
+	$apache -k start &>/dev/null
+	echo "正在启动httpd2服务"
+	touch $lock
 }
 
 stop (){
 	$apache -k stop &>/dev/null
 	echo "正在关闭httpd2服务"
 	rm -f $lock
-}
-
-restart (){
-	stop
-	start
 }
 
 status(){
@@ -206,7 +196,8 @@ case "$1" in
 		 stop
 		 ;;
 	"restart")
-		 restart
+		 stop
+		 start
 		 ;;
 	"status")
 		status
