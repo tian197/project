@@ -57,7 +57,7 @@ yum -y install sshpass &>/dev/null
 UserName=root
 IP="10.0.0."
 #创建密钥
-ssh-keygen -t dsa -f ~/.ssh/id_rsa -P "" &>/dev/null
+ssh-keygen -t rsa -f ~/.ssh/id_rsa -P "" &>/dev/null
 #分发公钥
 for i in 22 23
   do
@@ -120,9 +120,8 @@ mkdir /root/www{01..10}
 yum -y install gcc gcc-c++
 
 #上传httpd源码包，并解压。
-#wget http://mirrors.tuna.tsinghua.edu.cn/apache//httpd/httpd-2.2.9.tar.gz
-tar -xvf httpd-2.2.9.tar.gz
-cd httpd-2.2.9
+tar -xvf /root/httpd-2.2.9.tar.gz
+cd /root/httpd-2.2.9
 ./configure --enable-so --prefix=/usr/local/apache2
 make
 make install
