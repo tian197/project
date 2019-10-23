@@ -94,8 +94,9 @@ ssh root@10.0.0.22 "mkdir -p /opt/test;cd /opt/test;touch www.txt"
 [root@ localhost ~]# cat touch.sh
 #!/bin/bash
 
-touch /root/test{01..10}
-mkdir /root/www{01..10}
+mkdir -p /opt/test{01..10}
+touch /opt/test/www{01..10}
+
 
 [root@ localhost ~]# ssh root@10.0.0.22 </root/touch.sh
 ```
