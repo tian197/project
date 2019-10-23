@@ -59,7 +59,7 @@ IP="10.0.0."
 #创建密钥
 ssh-keygen -t rsa -f ~/.ssh/id_rsa -P "" &>/dev/null
 #分发公钥
-for i in 22 23
+for i in 23
   do
     sshpass -p "123456" ssh-copy-id -i ~/.ssh/id_rsa.pub "-p 22 -o StrictHostKeyChecking=no $UserName@$IP$i" &>/dev/null
 done
