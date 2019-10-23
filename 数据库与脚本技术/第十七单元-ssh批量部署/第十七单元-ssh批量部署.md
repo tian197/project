@@ -119,12 +119,11 @@ touch /opt/test01/www{01..10}
 yum -y install gcc gcc-c++
 
 #上传httpd源码包，并解压。
-tar -zxf /root/httpd-2.2.9.tar.gz
+tar -xvf /root/httpd-2.2.9.tar.gz -C /root
 cd /root/httpd-2.2.9
 ./configure --enable-so --prefix=/usr/local/apache2
 make
 make install
-
 ```
 
 
