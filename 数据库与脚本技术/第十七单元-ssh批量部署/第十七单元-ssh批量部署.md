@@ -133,7 +133,7 @@ make install
 
 ## 17.4 apache启动脚本
 
-### 17.4.1 实现思路与流程分析：
+### 17.4.1 实现思路与流程分析
 
 - 设置变量以存放apache启动命令
 - 定义start、stop、restart、status等各个函数
