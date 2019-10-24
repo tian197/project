@@ -28,6 +28,7 @@ if [ $(grep JAVA_HOME /etc/profile|wc -l) -eq 3 ]
 then
    echo "java_env is ok"
 else
+
 cat >>/etc/profile<<EOF
 ####java_env####
 export JAVA_HOME=/usr/local/jdk1.8.0_60
@@ -98,7 +99,6 @@ jdk='jdk-8u60-linux-x64.tar.gz'
 tomcat='apache-tomcat-7.0.47.tar.gz'
 
 iplist=(10.0.0.22)
-
 
 for ip in ${iplist[*]}
 do
