@@ -141,26 +141,3 @@ echo "this is $domain" >>$WebRoot$domain/index.html
 ```
 
 
-
-
-
-
-
-脚本调试
-
-定义判断输入函数
-
-监控httpd服务并使用邮件报警
-
-综合脚本调试
-
-
-
-
-
-
-
-
-
-
-
