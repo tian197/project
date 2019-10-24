@@ -38,13 +38,12 @@ EOF
 
 echo 'this is bw' >>/var/www/bw/index.html
 
-```
-
-重启httpd服务
-
-```
 /etc/init.d/httpd restart
 ```
+
+测试：
+
+浏览器访问：10.0.0.21:80
 
 
 
@@ -83,16 +82,16 @@ read -p 'please input your IP: '  ip
 read -p 'please input your Port: '  port
 
 read -p 'please input your DomainName: ' domain
-mkdir -p $domain
+mkdir -p $WebRoot$domain
 
-cat >/etc/httpd/conf.d/$WebDir.conf<<EOF
+cat >/etc/httpd/conf.d/$domain.conf<<EOF
 <VirtualHost $ip:$port>
   DocumentRoot "$WebRoot$domain"
   ServerName "$domain"
 </VirtualHost>
 EOF
 
-echo "this is $webdir" >>$WebRoot$webdir/index.html
+echo "this is $domain" >>$WebRoot$domain/index.html
 /etc/init.d/httpd restart
 
 ```
