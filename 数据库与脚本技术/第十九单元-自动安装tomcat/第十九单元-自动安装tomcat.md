@@ -28,7 +28,6 @@ if [ $(grep JAVA_HOME /etc/profile|wc -l) -eq 3 ]
 then
    echo "java_env is ok"
 else
-
 cat >>/etc/profile<<EOF
 ####java_env####
 export JAVA_HOME=/usr/local/jdk1.8.0_60
