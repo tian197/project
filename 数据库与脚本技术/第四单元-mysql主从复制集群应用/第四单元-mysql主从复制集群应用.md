@@ -133,7 +133,7 @@ mysql> show master status;
 +------------------+----------+--------------+------------------+-------------------+
 | File             | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
 +------------------+----------+--------------+------------------+-------------------+
-| mysql-bin.000002 |      403 |              |                  |                   |
+| mysql-bin.000003 |      467 |              |                  |                   |
 +------------------+----------+--------------+------------------+-------------------+
 
 或者
@@ -171,11 +171,11 @@ mysql> stop slave;
 change master to master_host='10.0.0.21',
 master_user='rep',
 master_password='123456',
-master_log_file='mysql-bin.000002',
-master_log_pos=403;
+master_log_file='mysql-bin.000003',
+master_log_pos=467;
 ```
 
-![1569673081042](assets/1569673081042.png)
+![1571986333684](assets/1571986333684.png)
 
 
 
@@ -192,7 +192,9 @@ mysql> start slave;
 mysql> show slave status\G
 ```
 
-![1569673454980](assets/1569673454980.png)
+![1571986364075](assets/1571986364075.png)
+
+
 
 
 
@@ -200,9 +202,7 @@ mysql> show slave status\G
 
 在mysql主服务器创建wg数据库，在从mysql服务器上查看数据库。发现主mysql上创建wg数据库，已经同步到从mysql上。
 
-![1569673558400](assets/1569673558400.png)
-
-
+![1571986528053](assets/1571986528053.png)
 
 
 
