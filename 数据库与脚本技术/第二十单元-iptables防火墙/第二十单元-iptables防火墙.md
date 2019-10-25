@@ -12,7 +12,7 @@
 
 ## 20.1 防火墙概念
 
-​	所谓防火墙指的是一个由软件和硬件设备组合而成、在内部网和外部网之间、专用网与公共网之间的界面上构造的保护屏障.是一种获取安全性方法的形象说法，它是一种计算机硬件和软件的结合，使Internet与Intranet之间建立起一个安全网关（Security Gateway），从而保护内部网免受非法用户的侵入，**防火墙主要由服务访问规则、验证工具、包过滤和应用网关4个部分组成**，**防火墙就是一个位于计算机和它所连接的网络之间的软件或硬件。****该计算机流入流出的所有网络通信和数据包均要经过此防火墙。**
+​	所谓防火墙指的是一个由软件和硬件设备组合而成、在内部网和外部网之间、专用网与公共网之间的界面上构造的保护屏障.是一种获取安全性方法的形象说法，它是一种计算机硬件和软件的结合，使Internet与Intranet之间建立起一个安全网关（Security Gateway），从而保护内部网免受非法用户的侵入，**防火墙主要由服务访问规则、验证工具、包过滤和应用网关4个部分组成**，**防火墙就是一个位于计算机和它所连接的网络之间的软件或硬件**。该计算机流入流出的所有网络通信和数据包均要经过此防火墙。
 
 ​	在网络中，所谓“防火墙”，是指一种将内部网和公众访问网（如Internet）分开的方法，它实际上是一种隔离技术。防火墙是在两个网络通讯时执行的一种访问控制尺度，它能允许你“同意”的人和数据进入你的网络，同时将你“不同意”的人和数据拒之门外，最大限度地阻止网络中的黑客来访问你的网络。换句话说，如果不通过防火墙，公司内部的人就无法访问Internet，Internet上的人也无法和公司内部的人进行通信。
 
@@ -40,7 +40,7 @@
 
 ## 20.1 iptables防火墙简介
 
-​	iptables是unix/linux自带的一款优秀的开放源代码的完全自由的**基于包过滤**的防火墙工具，它的功能十分强大，使用灵活，可以对流入和流出服务器的数据包进行控制。
+​	iptables是unix/linux自带的一款优秀的开放源代码的完全自由的**基于包过滤**的防火墙工具，它的功能十分强大，使用灵活，可以对**流入和流出服务器的数据包进行控制**。
 
 ​	iptables是linux2.4及2.6内核集成的服务。iptables主要工作在OSI七层的二（数据层），三（网络层），四层（传输层），如果重新编译内核，iptables也可以支持七层（应用层）的控制。
 
@@ -48,7 +48,7 @@
 
 ## 20.2 iptables企业应用场景
 
-1.主机防火墙（filter边的INPUT链）。
+1.主机防火墙（filter表的INPUT链）。
 
 2.网关（共享上网）（nat表的POSTROUTING链）。
 
@@ -150,8 +150,6 @@ iptables   [-t 表名]   命令选项  ［链名］［条件匹配］ ［-j 目�
 -Z 将所有表的所有链的字节和数据包计数器清零
 -n  使用数字形式（numeric）显示输出结果
 -v  查看规则表详细信息（verbose）的信息
--V  查看版本(version)
--h  获取帮助（help）
 ```
 
 iptables常用命令示例
@@ -442,13 +440,13 @@ INVALID 表示该数据包的联机编号（Session ID）无法辨识或编号�
 
 **分别说明如下：**
 
-**ACCEPT** 将数据包放行，进行完此处理动作后，将不再比对其它规则，直接跳往下一个规则链（natostrouting）。
+**ACCEPT** 将数据包放行，进行完此处理动作后，将不再 比对其它规则，直接跳往下一个规则链（natostrouting）。
 
 **REJECT** 拦阻该数据包，并传送数据包通知对方，可以传送的数据包有几个选择：ICMP port-unreachable、ICMP echo-reply 或是tcp-reset（这个数据包会要求对方关闭联机），进行完此处理动作后，将不再比对其它规则，直接 中断过滤程序。 
 
 范例如下：
 
-```
+```shell
 iptables -A FORWARD -p TCP --dport 22 -j REJECT --reject-with tcp-reset
 ```
 
@@ -458,31 +456,31 @@ iptables -A FORWARD -p TCP --dport 22 -j REJECT --reject-with tcp-reset
 
 例如：
 
-```
+```shell
 iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 8080
 ```
 
 **MASQUERADE** 改写数据包来源 IP为防火墙 NIC IP，可以指定 port 对应的范围，进行完此处理动作后，直接跳往下一个规则（mangleostrouting）。这个功能与 SNAT 略有不同，当进行 IP 伪装时，不需指定要伪装成哪个 IP，IP 会从网卡直接读取，当使用拨号连接时，IP 通常是由 ISP 公司的 DHCP 服务器指派的，这个时候 MASQUERADE 特别有用。范例如下：linux基础
 
-```
+```shell
 iptables -t nat -A POSTROUTING -p TCP -j MASQUERADE --to-ports 1024-31000
 ```
 
 **LOG** 将封包相关讯息纪录在 /var/log 中，详细位置请查阅 /etc/syslog.conf 配置文件，进行完此处理动作后，将会继续比对其规则。例如：
 
-```
+```shell
 iptables -A INPUT -p tcp -j LOG --log-prefix "INPUT packets"
 ```
 
 **SNAT** 改写封包来源 IP 为某特定 IP 或 IP 范围，可以指定 port 对应的范围，进行完此处理动作后，将直接跳往下一个规则（mangleostrouting）。范例如下：
 
-```
+```shell
 iptables -t nat -A POSTROUTING -p tcp-o eth0 -j SNAT --to-source 194.236.50.155-194.236.50.160:1024-32000
 ```
 
 **DNAT** 改写封包目的地 IP 为某特定 IP 或 IP 范围，可以指定 port 对应的范围，进行完此处理动作后，将会直接跳往下一个规炼（filter:input 或 filter:forward）。范例如下：
 
-```
+```shell
 iptables -t nat -A PREROUTING -p tcp -d 15.45.23.67 --dport 80 -j DNAT --to-destination
 192.168.1.1-192.168.1.10:80-100
 ```
@@ -518,6 +516,8 @@ iptables -t mangle -A PREROUTING -p tcp --dport 22 -j MARK --set-mark 2
 
 ```shell
 /etc/init.d/iptables start|stop
+
+chkconfig iptables off|on
 ```
 
 
@@ -715,7 +715,7 @@ iptables -A INPUT -p tcp -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 说明：“ESTABLISHED”表示已经响应请求或者已经建立连接的数据包，“RELATED”表示与已建立的连接有相关性的，比如FTP数据连接等。
 
-15.只开放本机的web服务（80）、FTP(20、21、20450-20480)，放行外部主机发住服务器其它端口的应答数据包，将其他入站数据包均予以丢弃处理。
+15.只开放本机的web服务（80）、FTP(20、21、20450-20480)，放行外部主机发往服务器其它端口的应答数据包，将其他入站数据包均予以丢弃处理。
 
 ```shell
 iptables -I INPUT -p tcp -m multiport --dport 20,21,80 -j ACCEPT
