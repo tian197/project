@@ -93,7 +93,7 @@ chkconfig keepalived on
 
 ```shell
 global_defs {
-   notification_email {   指定keepalived在发生切换时需要发送email到的对象。
+   notification_email {   #指定keepalived在发生切换时需要发送email到的对象。
      acassen@firewall.loc
    }
    notification_email_from  huangxin202823@163.com #指定发件人
@@ -138,7 +138,7 @@ virtual_server 192.168.200.100 443 {
     persistence_timeout 50   #会话保持时间，单位秒（可以适当延长时间以保持session）
     protocol TCP  #转发协议类型，有TCP和UDP两种
     real_server 192.168.201.100443 {   #定义RS 服务
-    weight 1#权重
+    weight 1	#权重
     #inhibit_on_failure #当服务器健康检查失效时，将weight设置为0不是直接从ipvs中删除
     #notify_up <STRING>|<QUOTED-STRING>#Server启动时执行的脚本
     #notify_down <STRING>|<QUOTED-STRING>#Server down时执行的脚本
