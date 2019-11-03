@@ -383,7 +383,7 @@ grafana和zabbix-server安装在一台机器（10.0.0.41）
 
 ### 16.5.1 安装grafana
 
-```
+```shell
 wget <https://dl.grafana.com/oss/release/grafana-6.3.5-1.x86_64.rpm> 
 sudo yum -y localinstall grafana-6.3.5-1.x86_64.rpm 
 
