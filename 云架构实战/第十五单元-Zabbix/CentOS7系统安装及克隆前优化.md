@@ -98,7 +98,14 @@ yum -y install gcc gcc-c++  cmake curl  nmap  lrzsz unzip zip ntpdate telnet vim
 
 
 
+2.4 关闭图形化网卡管理
 
+不关闭会出现，ip无法出现的问题。
+
+```shell
+systemctl stop NetworkManager
+systemctl disable NetworkManager
+```
 
 
 
