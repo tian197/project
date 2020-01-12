@@ -127,7 +127,7 @@ mysql> flush privileges;
 
 3.查看主服务器状态
 
-```
+```shell
 #记录下日志文件名和位置，备用
 mysql> show master status;
 +------------------+----------+--------------+------------------+-------------------+
@@ -146,7 +146,7 @@ mysql> show master status\G
 
 1.配置mysql从服务器
 
-```
+```shell
 yum -y install mysql mysql-server
 
 vim /etc/my.cnf
@@ -160,14 +160,14 @@ relay-log=mysql-relay
 
 2.关闭从服务器的复制功能
 
-```
+```shell
 mysql -uroot -p123456
 mysql> stop slave;
 ```
 
 3.配置从服务器指向master
 
-```
+```shell
 change master to master_host='10.0.0.21',
 master_user='rep',
 master_password='123456',

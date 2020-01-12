@@ -97,7 +97,7 @@ ssh批量部署的方法，设置批量部署的ip地址，并将jdk与tomcat以
 jdk='jdk-8u60-linux-x64.tar.gz'
 tomcat='apache-tomcat-7.0.47.tar.gz'
 
-iplist=(10.0.0.22)
+iplist=(10.0.0.22 10.0.0.23)
 
 for ip in ${iplist[*]}
 do
