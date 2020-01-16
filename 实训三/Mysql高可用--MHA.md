@@ -72,11 +72,11 @@ purge_relay_logs                清除中继日志（不会阻塞SQL线程）
 
 ## 2.1 资源准备
 
-| 主机名 |    ip     |   系统    |     角色      |                  安装软件                   |
-| :----: | :-------: | :-------: | :-----------: | :-----------------------------------------: |
-| c7m01  | 10.0.0.41 | centos7.2 | mysql-master  | mysql5.6，mha4mysql-manager，mha4mysql-node |
-|  c702  | 10.0.0.42 | centos7.2 | mysql-slave02 |          mysql5.6，mha4mysql-node           |
-|  c703  | 10.0.0.43 | centos7.2 | mysql-slave03 |          mysql5.6，mha4mysql-node           |
+| 主机名 |    ip     |   系统    |       角色        |                  安装软件                   |
+| :----: | :-------: | :-------: | :---------------: | :-----------------------------------------: |
+| c7m01  | 10.0.0.41 | centos7.2 |     master主      |          mysql5.6，mha4mysql-node           |
+|  c702  | 10.0.0.42 | centos7.2 | slave02（备用主） |          mysql5.6，mha4mysql-node           |
+|  c703  | 10.0.0.43 | centos7.2 |      slave03      | mysql5.6，mha4mysql-manager，mha4mysql-node |
 
 注：先在在每台机器上装好mysql5.6。
 
@@ -169,11 +169,16 @@ vim /etc/my.cnf
 [mysqld]
 server-id=1
 log-bin=mysql-bin
-
+#禁止mysql自动删除relaylog工能
+relay_log_purge = 0
 #mysql5.6已上的特性，开启gtid，必须主从全开
 gtid_mode = on
 enforce_gtid_consistency = 1
 log_slave_updates = 1
+
+
+#重启mysql
+systemctl restart mysql
 ```
 
 创建同步的用户
@@ -220,12 +225,16 @@ vim /etc/my.cnf
 [mysqld]
 server-id=2
 log-bin=mysql-bin
-#禁止mysql自动删除relaylog工能　(只在从库配置)
+#禁止mysql自动删除relaylog工能
 relay_log_purge = 0
 #mysql5.6已上的特性，开启gtid，必须主从全开
 gtid_mode = on
 enforce_gtid_consistency = 1
 log_slave_updates = 1
+
+
+#重启mysql
+systemctl restart mysql
 ```
 
 创建同步的用户
@@ -250,7 +259,7 @@ change master to master_host='10.0.0.41',
 master_user='rep',
 master_password='123456',
 master_log_file='mysql-bin.000001',
-master_log_pos=527;
+master_log_pos=530;
 ```
 
 开启从服务器的复制功能
@@ -276,12 +285,17 @@ vim /etc/my.cnf
 [mysqld]
 server-id=3
 log-bin=mysql-bin
-#禁止mysql自动删除relaylog工能　(只在从库配置)
+
+#禁止mysql自动删除relaylog工能
 relay_log_purge = 0
+
 #mysql5.6已上的特性，开启gtid，必须主从全开
 gtid_mode = on
 enforce_gtid_consistency = 1
 log_slave_updates = 1
+
+#重启mysql
+systemctl restart mysql
 ```
 
 创建同步的用户
@@ -305,8 +319,8 @@ mysql> stop slave;
 change master to master_host='10.0.0.41',
 master_user='rep',
 master_password='123456',
-master_log_file='mysql-bin.000001',
-master_log_pos=527;
+master_log_file='mysql-bin.000004',
+master_log_pos=530;
 ```
 
 开启从服务器的复制功能
@@ -361,22 +375,24 @@ grant all privileges on *.* to mha@'10.0.0.%' identified by 'mha';
 flush privileges;
 ```
 
-### 2.4.3 安装MHA节点包
+### 2.4.3 安装MHA node节点
 
 ```
 #上传mha4mysql-node-0.58-0.el7.centos.noarch.rpm
 rpm -ivh mha4mysql-node-0.58-0.el7.centos.noarch.rpm
 ```
 
-**挑选一台节点安装MHA管理端，这里选择c7m01**
+### 2.4.4 安装MHA管理节点
+
+**安装MHA管理端，这里选择c703（永远不会切换为主库的节点）**
+
+**注意：MHA管理节点不要安装到mysql主库和切换的从库上，否则会在后面出现vip无法漂移的情况。**
 
 ```shell
-[root@ c7m01 ~]# rpm -ivh mha4mysql-manager-0.58-0.el7.centos.noarch.rpm
+[root@ c703 ~]# rpm -ivh mha4mysql-manager-0.58-0.el7.centos.noarch.rpm
 ```
 
-
-
-源码安装方式：
+附带源码安装方式：
 
 ```shell
 yum  -y install perl-DBD-MySQL perl-Config-Tiny perl-Params-Validate  perl-CPAN perl-devel perl-ExtUtils-CBuilder perl-ExtUtils-MakeMaker
@@ -399,21 +415,19 @@ make && make install
 
 
 
-
-
 ### 2.4.4 配置MHA
 
 ```shell
-mkdir -p /etc/mha
-mkdir -p /var/log/mha/app1
+[root@ c703 ~]# mkdir -p /etc/mha
+[root@ c703 ~]# mkdir -p /var/log/mha/app1
 
 
-vim /etc/mha/app1.cnf
+[root@ c703 ~]# vim /etc/mha/app1.cnf
 
 [server default]
 manager_log=/var/log/mha/app1/manager.log
 manager_workdir=/var/log/mha/app1
-master_binlog_dir=/application/mysql/data
+master_binlog_dir=/var/lib/mysql #binlog的目录，如果说miysql的环境不一样，binlog位置不同，每台服务器的binlog的位置写在server标签里面即可
 user=mha
 password=mha
 ping_interval=2
@@ -424,14 +438,12 @@ ssh_user=root
 [server1]
 hostname=10.0.0.41
 port=3306
-check_repl_delay=0
-candidate_master=1
+
 
 [server2]
 hostname=10.0.0.42
 port=3306
-check_repl_delay=0
-candidate_master=1
+
 
 [server3]
 hostname=10.0.0.43
@@ -439,7 +451,7 @@ port=3306
 ignore_fail=1  #如果这个节点挂了，mha将不可用，加上这个参数，slave挂了一样可以用
 no_master=1  #从不将这台主机转换为master
 #candidate_master=1 #如果候选master有延迟的话，relay日志超过100m，failover切换不能成功，加上此参数后会忽略延迟日志大小。
-#check_repl_delay=0
+#check_repl_delay=0 #用防止master故障时,切换时slave有延迟,卡在那里切不过来
 ```
 
 ```shell
@@ -454,26 +466,26 @@ no_master=1  #从不将这台主机转换为master
 **ssh检查检测**
 
 ```
-masterha_check_ssh --conf=/etc/mha/app1.cnf
+[root@ c703 ~]# masterha_check_ssh --conf=/etc/mha/app1.cnf
 ```
 
-![1578394058799](assets/1578394058799.png)
+![1579154010621](assets/1579154010621.png)
 
 **主从复制检测**
 
 ```
-masterha_check_repl --conf=/etc/mha/app1.cnf
+[root@ c703 ~]# masterha_check_repl --conf=/etc/mha/app1.cnf
 ```
 
 报错：
 
 ```shell
-[root@ c7m01 mysql]# masterha_check_repl --conf=/etc/mha/app1.cnf
+[root@ c703 ~]# masterha_check_repl --conf=/etc/mha/app1.cnf
 Tue Jan  7 19:10:17 2020 - [warning] Global configuration file /etc/masterha_default.cnf not found. Skipping.
 Tue Jan  7 19:10:17 2020 - [info] Reading application default configuration from /etc/mha/app1.cnf..
 Tue Jan  7 19:10:17 2020 - [info] Reading server configuration from /etc/mha/app1.cnf..
 Tue Jan  7 19:10:17 2020 - [info] MHA::MasterMonitor version 0.56.
-Tue Jan  7 19:10:17 2020 - [error][/usr/share/perl5/vendor_perl/MHA/ServerManager.pm, ln301] Got MySQL error when connecting 10.0.0.41(10.0.0.41:3306):1045:Access denied for user 'mha'@'c7m01' (using password: YES), but this is not a MySQL crash. Check MySQL server settings.
+Tue Jan  7 19:10:17 2020 - [error][/usr/share/perl5/vendor_perl/MHA/ServerManager.pm, ln301] Got MySQL error when connecting 10.0.0.43(10.0.0.43:3306):1045:Access denied for user 'mha'@'c703' (using password: YES), but this is not a MySQL crash. Check MySQL server settings.
  at /usr/share/perl5/vendor_perl/MHA/ServerManager.pm line 297.
 Tue Jan  7 19:10:18 2020 - [error][/usr/share/perl5/vendor_perl/MHA/ServerManager.pm, ln309] Got fatal error, stopping operations
 Tue Jan  7 19:10:18 2020 - [error][/usr/share/perl5/vendor_perl/MHA/MasterMonitor.pm, ln424] Error happened on checking configurations.  at /usr/share/perl5/vendor_perl/MHA/MasterMonitor.pm line 326.
@@ -483,7 +495,7 @@ Tue Jan  7 19:10:18 2020 - [info] Got exit code 1 (Not master dead).
 MySQL Replication Health is NOT OK!
 ```
 
-需要在配置文件中添加：
+需要在mysql配置文件中添加：
 
 ```
 skip-name-resolve
@@ -494,31 +506,31 @@ skip-name-resolve
 ### 2.4.6 启动MHA
 
 ```shell
-nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log  2>&1 &
+[root@ c703 ~]# nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log  2>&1 &
 ```
 
 **查看MHA状态**
 
 ```shell
-[root@ c7m01 ~]# masterha_check_status --conf=/etc/mha/app1.cnf
+[root@ c703 ~]# masterha_check_status --conf=/etc/mha/app1.cnf
 app1 (pid:28500) is running(0:PING_OK), master:10.0.0.41
 ```
 
 **关闭MHA**
 
 ```
-masterha_stop --conf=/etc/mha/app1.cnf
+[root@ c703 ~]# masterha_stop --conf=/etc/mha/app1.cnf
 ```
 
 **从库从新加入新主**
 
 ```
-grep "CHANGE MASTER TO MASTER"  /var/log/mha/app1/manager.log | tail -1
+[root@ c703 ~]# grep -i "CHANGE MASTER TO MASTER"  /var/log/mha/app1/manager.log | tail -1
 ```
 
 
 
-### 2.4.7 测试MHA功能
+### 2.4.7 测试MHA故障转移
 
 **停掉c7m01主库10.0.0.41**
 
@@ -548,18 +560,17 @@ grep "CHANGE MASTER TO MASTER"  /var/log/mha/app1/manager.log | tail -1
 
 **查看c7m01的MHA的配置文件**
 
-
-
 ![1578466967036](assets/1578466967036.png)
 
 当作为主库的c7m01上的MySQL宕机以后，mha通过检测发现c7m01的mysql，那么会将binlog日志最全的从库立刻提升为主库，而其他的从库会指向新的主库进行再次同步。
 
 
 
-**故障还原,将曾经的主库重启并挂入架构**
+### 2.4.8 MHA故障还原
 
 ```shell
-[root@ c7m01 ~]# grep "CHANGE MASTER TO MASTER"  /var/log/mha/app1/manager.log | tail -1
+[root@ c703 ~]# grep "CHANGE MASTER TO MASTER"  /var/log/mha/app1/manager.log | tail -1
+
 Wed Jan  8 14:49:27 2020 - [info]  All other slaves should start replication from here. Statement should be: CHANGE MASTER TO MASTER_HOST='10.0.0.42',MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='rep', MASTER_PASSWORD='xxx';
 
 [root@ c7m01 ~]# systemctl restart mysql
@@ -581,7 +592,7 @@ hostname=10.0.0.41 \
 port=3306 \
 ' /etc/mha/app1.cnf
 
-[root@ c7m01 ~]# nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log2>&1 &
+[root@ c703 ~]# nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log2>&1 &
 ```
 
 
@@ -590,11 +601,152 @@ port=3306 \
 
 
 
-IP漂移的两种方式
-通过keepalived的方式，管理虚拟IP的漂移
-通过MHA自带脚本的方式，管理虚拟IP的漂移    #用mha自带的一个VIP漂移的脚本，哪个提升为主，就飘到那个上面，要根据binlog最新的slave提升。
+### 2.5.1 IP漂移的两种方式
+
+​	通过keepalived的方式，管理虚拟IP的漂移。
+​	通过MHA自带脚本的方式，管理虚拟IP的漂移    #用mha自带的一个VIP漂移的脚本，哪个提升为主，就飘到那个上面，要根据binlog最新的slave提升。
 
 
+
+### 2.5.2 MHA脚本方式
+
+**修改MHA配置文件**
+
+```
+[root@ c703 ~]# vim /etc/mha/app1.cnf
+
+[server default]
+master_ip_failover_script=/usr/bin/master_ip_failover
+```
+
+![1579142735467](assets/1579142735467.png)
+
+
+
+**编写飘移脚本**
+
+注意：修改脚本中的网卡名和IP地址。
+
+```perl
+[root@ c703 ~]# vim /usr/bin/master_ip_failover
+
+#!/usr/bin/env perl
+
+use strict;
+use warnings FATAL => 'all';
+
+use Getopt::Long;
+
+my (
+    $command,          $ssh_user,        $orig_master_host, $orig_master_ip,
+    $orig_master_port, $new_master_host, $new_master_ip,    $new_master_port
+);
+
+my $vip = '10.0.0.49/24';
+my $key = '1';
+my $ssh_start_vip = "/sbin/ifconfig ens33:$key $vip";
+my $ssh_stop_vip = "/sbin/ifconfig ens33:$key down";
+
+GetOptions(
+    'command=s'          => \$command,
+    'ssh_user=s'         => \$ssh_user,
+    'orig_master_host=s' => \$orig_master_host,
+    'orig_master_ip=s'   => \$orig_master_ip,
+    'orig_master_port=i' => \$orig_master_port,
+    'new_master_host=s'  => \$new_master_host,
+    'new_master_ip=s'    => \$new_master_ip,
+    'new_master_port=i'  => \$new_master_port,
+);
+
+exit &main();
+
+sub main {
+
+    print "\n\nIN SCRIPT TEST====$ssh_stop_vip==$ssh_start_vip===\n\n";
+
+    if ( $command eq "stop" || $command eq "stopssh" ) {
+
+        my $exit_code = 1;
+        eval {
+            print "Disabling the VIP on old master: $orig_master_host \n";
+            &stop_vip();
+            $exit_code = 0;
+        };
+        if ($@) {
+            warn "Got Error: $@\n";
+            exit $exit_code;
+        }
+        exit $exit_code;
+    }
+    elsif ( $command eq "start" ) {
+
+        my $exit_code = 10;
+        eval {
+            print "Enabling the VIP - $vip on the new master - $new_master_host \n";
+            &start_vip();
+            $exit_code = 0;
+        };
+        if ($@) {
+            warn $@;
+            exit $exit_code;
+        }
+        exit $exit_code;
+    }
+    elsif ( $command eq "status" ) {
+        print "Checking the Status of the script.. OK \n";
+        exit 0;
+    }
+    else {
+        &usage();
+        exit 1;
+    }
+}
+
+sub start_vip() {
+    `ssh $ssh_user\@$new_master_host \" $ssh_start_vip \"`;
+}
+sub stop_vip() {
+     return 0  unless  ($ssh_user);
+    `ssh $ssh_user\@$orig_master_host \" $ssh_stop_vip \"`;
+}
+
+sub usage {
+    print
+    "Usage: master_ip_failover --command=start|stop|stopssh|status --orig_master_host=host --orig_master_ip=ip --orig_master_port=port --new_master_host=host --new_master_ip=ip --new_master_port=port\n";
+}
+```
+
+```shell
+chmod +x /usr/bin/master_ip_failover
+```
+
+### 2.5.3 手动绑定vip
+
+```shell
+[root@ c7m01 ~]# ifconfig ens33:1 10.0.0.49/24
+```
+
+![1579145552310](assets/1579145552310.png)
+
+### 2.5.4 重启MHA
+
+```shell
+[root@ c703 ~]# masterha_stop --conf=/etc/mha/app1.cnf
+
+[root@ c703 ~]# nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log  2>&1 &
+```
+
+
+
+## 2.6 模拟主库宕机vip飘移
+
+**关闭c7m01上的主库mysql**
+
+![1579155926966](assets/1579155926966.png)
+
+**查看c702上mysql的master状态和vip**
+
+![1579156006788](assets/1579156006788.png)
 
 
 
