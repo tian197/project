@@ -738,7 +738,7 @@ chmod +x /usr/bin/master_ip_failover
 
 
 
-## 2.6 模拟主库宕机vip飘移
+### 2.6 模拟主库宕机vip飘移
 
 **关闭c7m01上的主库mysql**
 
@@ -749,6 +749,63 @@ chmod +x /usr/bin/master_ip_failover
 ![1579156006788](assets/1579156006788.png)
 
 
+
+# 3. Mysql之Atlas(读写分离)
+
+数据库中间件Atlas与Mycat比较-分库分表压测报告 <https://blog.csdn.net/lizhitao/article/details/71680714>
+
+　Atlas 是由 Qihoo 360公司Web平台部基础架构团队开发维护的一个基于MySQL协议的数据中间层项目。它在MySQL官方推出的MySQL-Proxy 0.8.2版本的基础上，修改了大量bug，添加了很多功能特性。目前该项目在360公司内部得到了广泛应用，很多MySQL业务已经接入了Atlas平台，每天承载的读写请求数达几十亿条。
+　　源码Github： https://github.com/Qihoo360/Atlas
+
+## 3.1 Atlas的功用与应用场景
+
+Atlas的功能有：读写分离、从库负载均衡、自动分表、IP过滤、SQL语句黑白名单、DBA可平滑上下线DB、自动摘除宕机的DB
+Atlas的使用场景：Atlas是一个位于前端应用与后端MySQL数据库之间的中间件，它使得应用程序员无需再关心读写分离、分表等与MySQL相关的细节，可以专注于编写业务逻辑，同时使得DBA的运维工作对前端应用透明，上下线DB前端应用无感知
+
+
+
+## 3.2 Atlas的安装过程
+
+注意：
+1、Atlas只能安装运行在64位的系统上
+2、Centos 5.X安装 Atlas-XX.el5.x86_64.rpm，Centos 6.X安装Atlas-XX.el6.x86_64.rpm(经过测试centos7也可以使用6的版本)
+3、后端mysql版本应大于5.1，建议使用Mysql 5.6以上
+
+
+
+```shell
+1.安装altas
+rpm -ivh Atlas-2.2.1.el6.x86_64.rpm 
+
+2.修改配置文件
+cp /usr/local/mysql-proxy/conf/test.cnf{,.bak}
+vim /usr/local/mysql-proxy/conf/test.cnf
+[mysql-proxy]
+admin-username = user
+admin-password = pwd
+proxy-backend-addresses = 10.0.0.49:3306 # 设置写入主库vip的地址
+proxy-read-only-backend-addresses = 10.0.0.43:3306 # 设置只读的从库地址
+pwds = rep:/iZxz+0GRoA=,mha:O2jBXONX098= # 设置数据库管理用户，加密方法：/usr/local/mysql-proxy/bin/encrypt  密码
+daemon = true
+keepalive = true
+event-threads = 8
+log-level = message
+log-path = /usr/local/mysql-proxy/log
+sql-log=ON
+proxy-address = 0.0.0.0:1234
+admin-address = 0.0.0.0:2345
+charset=utf8
+
+3.启动atlas
+/usr/local/mysql-proxy/bin/mysql-proxyd test start
+
+4.查看atlas
+ps -ef | grep  mysql-proxy
+```
+
+
+
+## 3.3 Atlas读写分离测试
 
 
 
