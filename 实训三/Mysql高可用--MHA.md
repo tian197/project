@@ -78,7 +78,7 @@ purge_relay_logs                清除中继日志（不会阻塞SQL线程）
 |  c702  | 10.0.0.42 | centos7.2 | slave02（备用主） |          mysql5.6，mha4mysql-node           |
 |  c703  | 10.0.0.43 | centos7.2 |      slave03      | mysql5.6，mha4mysql-manager，mha4mysql-node |
 
-注：先在在每台机器上装好mysql5.6。
+注：先在每台机器上装好mysql5.6。
 
 
 
@@ -95,11 +95,11 @@ echo "*/5 * * * * /usr/sbin/ntpdate ntp1.aliyun.com >/dev/null 2>&1" >>/var/spoo
 **hosts解析**
 
 ```shell
-cat >>/etc/hostsEOF
+cat >>/etc/hosts<<EOF
 c7m01 10.0.0.41
 c702  10.0.0.42
 c703  10.0.0.43
-<<EOF
+EOF
 ```
 
 **关闭防火墙和selinux**
@@ -114,7 +114,7 @@ sed -i  '/^SELINUX/s#enforcing#disabled#g' /etc/selinux/config
 
 **互相配置ssh免密码登录**
 
-注意：是互相，并且最好不要禁掉密码登录，如果禁了，可能会有问题)
+注意：是互相，并且最好不要禁掉密码登录，如果禁了，可能会有问题
 
 ```shell
 yum -y install sshpass
