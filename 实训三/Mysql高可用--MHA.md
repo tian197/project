@@ -120,15 +120,14 @@ sed -i  '/^SELINUX/s#enforcing#disabled#g' /etc/selinux/config
 yum -y install sshpass
 
 #!/bin/bash
-
 UserName=root
-IP="10.0.0."
+IPlist=(10.0.0.41 10.0.0.42 10.0.0.43)
 #创建密钥
 ssh-keygen -t dsa -f ~/.ssh/id_dsa -P "" &>/dev/null
 #分发公钥
-for i in 41 42 43
+for i in ${IPlist[*]}
   do
-    sshpass -p "123456" ssh-copy-id -i ~/.ssh/id_dsa.pub -p 22 -o StrictHostKeyChecking=no $UserName@$IP$i &>/dev/null
+    sshpass -p "123456" ssh-copy-id -i ~/.ssh/id_dsa.pub -p 22 -o StrictHostKeyChecking=no $UserName@$i &>/dev/null
 done
 ```
 
