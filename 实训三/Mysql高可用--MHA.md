@@ -464,11 +464,9 @@ ssh_user=root
 hostname=10.0.0.41
 port=3306
 
-
 [server2]
 hostname=10.0.0.42
 port=3306
-
 
 [server3]
 hostname=10.0.0.43
