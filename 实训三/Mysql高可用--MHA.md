@@ -271,17 +271,12 @@ mysql> start slave;
 
 ```
 ERROR 1872 (HY000): Slave failed to initialize relay log info structure from the repository
-```
 
 报错原因：
-
 从库已经存在之前的relay log
 
 解决方法：
-
 使用RESET SLAVE语句，清除master信息和relay日志的信息，删除所有的relay日志文件，并开始创建一个全新的中继日志
-
-```
 mysql> stop slave;
 mysql> reset slave
 ```
@@ -291,6 +286,18 @@ mysql> reset slave
 ```shell
 #检查画横线的两行是否变为yes
 mysql> show slave status\G
+```
+
+常见报错：
+
+```
+mysql> show slave status\G；
+ERROR：
+No query specified
+
+解决办法：
+去掉分号
+; \g \G三者选其一即可。
 ```
 
 
