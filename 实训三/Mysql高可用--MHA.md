@@ -411,7 +411,7 @@ rpm -ivh mha4mysql-node-0.58-0.el7.centos.noarch.rpm
 
 **安装MHA管理端，这里选择c703（永远不会切换为主库的节点）**
 
-**注意：MHA管理节点不要安装到mysql主库和切换的从库上，否则会在后面出现vip无法漂移的情况。**
+**注意：MHA管理节点不要安装到mysql主库和切换的从库上（备用的主库），否则会在后面出现vip无法漂移的情况。**
 
 ```shell
 [root@ c703 ~]# rpm -ivh mha4mysql-manager-0.58-0.el7.centos.noarch.rpm
