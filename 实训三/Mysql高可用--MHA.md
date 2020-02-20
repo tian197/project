@@ -140,7 +140,7 @@ done
 ```shell
 wget http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm
 rpm -ivh mysql-community-release-el7-5.noarch.rpm
-yum install mysql-server -y
+yum install mysql-server mysql -y
 ```
 
 注意：在新版本的CentOS7中，默认的数据库已更新为了Mariadb，而非 MySQL，所以执行 yum install mysql 命令只是更新Mariadb数据库，并不会安装 MySQL 。
@@ -265,6 +265,25 @@ master_log_pos=530;
 
 ```shell
 mysql> start slave;
+```
+
+常见报错：
+
+```
+ERROR 1872 (HY000): Slave failed to initialize relay log info structure from the repository
+```
+
+报错原因：
+
+从库已经存在之前的relay log
+
+解决方法：
+
+使用RESET SLAVE语句，清除master信息和relay日志的信息，删除所有的relay日志文件，并开始创建一个全新的中继日志
+
+```
+mysql> stop slave;
+mysql> reset slave
 ```
 
 检查从服务器的复制功能状态
