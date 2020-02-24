@@ -72,11 +72,13 @@ purge_relay_logs                清除中继日志（不会阻塞SQL线程）
 
 ## 2.1 资源准备
 
-| 主机名 |    ip     |   系统    |       角色        |                  安装软件                   |
-| :----: | :-------: | :-------: | :---------------: | :-----------------------------------------: |
-| c7m01  | 10.0.0.41 | centos7.2 |     master主      |          mysql5.6，mha4mysql-node           |
-|  c702  | 10.0.0.42 | centos7.2 | slave02（备用主） |          mysql5.6，mha4mysql-node           |
-|  c703  | 10.0.0.43 | centos7.2 |      slave03      | mysql5.6，mha4mysql-manager，mha4mysql-node |
+| 主机名 |    ip     |   系统    |       角色        |                         安装软件                          |
+| :----: | :-------: | :-------: | :---------------: | :-------------------------------------------------------: |
+| c7m01  | 10.0.0.41 | centos7.2 |     master主      |                 mysql5.6，mha4mysql-node                  |
+|  c702  | 10.0.0.42 | centos7.2 | slave02（备用主） |                 mysql5.6，mha4mysql-node                  |
+|  c703  | 10.0.0.43 | centos7.2 |      slave03      |                 mysql5.6，mha4mysql-node                  |
+|  c704  | 10.0.0.44 | centos7.2 |     mha+atlas     | mysql5.6-client，mha4mysql-manager，mha4mysql-node，atlas |
+|        | 10.0.0.49 | centos7.2 |        VIP        |                    绑定到mysql-master                     |
 
 注：先在每台机器上装好mysql5.6。
 
@@ -84,7 +86,7 @@ purge_relay_logs                清除中继日志（不会阻塞SQL线程）
 
 ## 2.2 环境准备
 
-以下需要在三台机器上操作
+以下需要在四台机器上操作
 
 **时间同步**
 
@@ -99,6 +101,7 @@ cat >>/etc/hosts<<EOF
 c7m01 10.0.0.41
 c702  10.0.0.42
 c703  10.0.0.43
+c704  10.0.0.44
 EOF
 ```
 
@@ -121,7 +124,7 @@ yum -y install sshpass
 
 #!/bin/bash
 UserName=root
-IPlist=(10.0.0.41 10.0.0.42 10.0.0.43)
+IPlist=(10.0.0.41 10.0.0.42 10.0.0.43 10.0.0.44)
 #创建密钥
 ssh-keygen -t dsa -f ~/.ssh/id_dsa -P "" &>/dev/null
 #分发公钥
@@ -257,8 +260,8 @@ mysql> stop slave;
 change master to master_host='10.0.0.41',
 master_user='rep',
 master_password='123456',
-master_log_file='mysql-bin.000001',
-master_log_pos=530;
+master_log_file='mysql-bin.000005',
+master_log_pos=191;
 ```
 
 开启从服务器的复制功能
@@ -409,12 +412,10 @@ rpm -ivh mha4mysql-node-0.58-0.el7.centos.noarch.rpm
 
 ### 2.4.4 安装MHA管理节点
 
-**安装MHA管理端，这里选择c703（永远不会切换为主库的节点）**
-
 **注意：MHA管理节点不要安装到mysql主库和切换的从库上（备用的主库），否则会在后面出现vip无法漂移的情况。**
 
 ```shell
-[root@ c703 ~]# rpm -ivh mha4mysql-manager-0.58-0.el7.centos.noarch.rpm
+[root@ c704 ~]# rpm -ivh mha4mysql-manager-0.58-0.el7.centos.noarch.rpm
 ```
 
 附带源码安装方式：
@@ -443,11 +444,11 @@ make && make install
 ### 2.4.4 配置MHA
 
 ```shell
-[root@ c703 ~]# mkdir -p /etc/mha
-[root@ c703 ~]# mkdir -p /var/log/mha/app1
+[root@ c704 ~]# mkdir -p /etc/mha
+[root@ c704 ~]# mkdir -p /var/log/mha/app1
 
 
-[root@ c703 ~]# vim /etc/mha/app1.cnf
+[root@ c704 ~]# vim /etc/mha/app1.cnf
 
 [server default]
 manager_log=/var/log/mha/app1/manager.log
@@ -489,7 +490,7 @@ no_master=1  #从不将这台主机转换为master
 **ssh检查检测**
 
 ```
-[root@ c703 ~]# masterha_check_ssh --conf=/etc/mha/app1.cnf
+[root@ c704 ~]# masterha_check_ssh --conf=/etc/mha/app1.cnf
 ```
 
 ![1579154010621](assets/1579154010621.png)
@@ -497,13 +498,13 @@ no_master=1  #从不将这台主机转换为master
 **主从复制检测**
 
 ```
-[root@ c703 ~]# masterha_check_repl --conf=/etc/mha/app1.cnf
+[root@ c704 ~]# masterha_check_repl --conf=/etc/mha/app1.cnf
 ```
 
 报错：
 
 ```shell
-[root@ c703 ~]# masterha_check_repl --conf=/etc/mha/app1.cnf
+[root@ c704 ~]# masterha_check_repl --conf=/etc/mha/app1.cnf
 Tue Jan  7 19:10:17 2020 - [warning] Global configuration file /etc/masterha_default.cnf not found. Skipping.
 Tue Jan  7 19:10:17 2020 - [info] Reading application default configuration from /etc/mha/app1.cnf..
 Tue Jan  7 19:10:17 2020 - [info] Reading server configuration from /etc/mha/app1.cnf..
@@ -518,7 +519,7 @@ Tue Jan  7 19:10:18 2020 - [info] Got exit code 1 (Not master dead).
 MySQL Replication Health is NOT OK!
 ```
 
-需要在mysql配置文件中添加：
+需要在所有的mysql配置文件中添加：
 
 ```
 skip-name-resolve
@@ -529,26 +530,26 @@ skip-name-resolve
 ### 2.4.6 启动MHA
 
 ```shell
-[root@ c703 ~]# nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log  2>&1 &
+[root@ c704 ~]# nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log  2>&1 &
 ```
 
 **查看MHA状态**
 
 ```shell
-[root@ c703 ~]# masterha_check_status --conf=/etc/mha/app1.cnf
+[root@ c704 ~]# masterha_check_status --conf=/etc/mha/app1.cnf
 app1 (pid:28500) is running(0:PING_OK), master:10.0.0.41
 ```
 
 **关闭MHA**
 
 ```
-[root@ c703 ~]# masterha_stop --conf=/etc/mha/app1.cnf
+[root@ c704 ~]# masterha_stop --conf=/etc/mha/app1.cnf
 ```
 
-**从库从新加入新主**
+**从库重新加入新主**
 
 ```
-[root@ c703 ~]# grep -i "CHANGE MASTER TO MASTER"  /var/log/mha/app1/manager.log | tail -1
+[root@ c704 ~]# grep -i "CHANGE MASTER TO MASTER"  /var/log/mha/app1/manager.log | tail -1
 ```
 
 
@@ -560,8 +561,6 @@ app1 (pid:28500) is running(0:PING_OK), master:10.0.0.41
 ```shell
 [root@ c7m01 ~]# systemctl stop mysql
 ```
-
-
 
 **查看c703的slave状态，发现Master_Host变成了10.0.0.42**
 
@@ -579,20 +578,24 @@ app1 (pid:28500) is running(0:PING_OK), master:10.0.0.41
 
 ![1578466753996](assets/1578466753996.png)
 
+**查看c703的MHA的配置文件**
 
+![1582268350004](assets/1582268350004.png)
 
-**查看c7m01的MHA的配置文件**
+**发生故障时，MHA做了什么？**
 
-![1578466967036](assets/1578466967036.png)
+①当作为主库的c7m01上的MySQL宕机以后，mha通过检测发现c7m01的mysql宕机了，那么会将binlog日志最全的从库（c702）立刻提升为主库，而其他的从库会指向新的主库进行再次同步。
 
-当作为主库的c7m01上的MySQL宕机以后，mha通过检测发现c7m01的mysql，那么会将binlog日志最全的从库立刻提升为主库，而其他的从库会指向新的主库进行再次同步。
+②MHA会自己结束自己的进程，还会将/etc/mha/app1.cnf配置文件中，坏掉的那台机器剔除。
 
 
 
 ### 2.4.8 MHA故障还原
 
+①先将宕机mysql修复，然后加入到mysql一主两从集群
+
 ```shell
-[root@ c703 ~]# grep "CHANGE MASTER TO MASTER"  /var/log/mha/app1/manager.log | tail -1
+[root@ c704 ~]# grep "CHANGE MASTER TO MASTER"  /var/log/mha/app1/manager.log | tail -1
 
 Wed Jan  8 14:49:27 2020 - [info]  All other slaves should start replication from here. Statement should be: CHANGE MASTER TO MASTER_HOST='10.0.0.42',MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='rep', MASTER_PASSWORD='xxx';
 
@@ -601,57 +604,57 @@ Wed Jan  8 14:49:27 2020 - [info]  All other slaves should start replication fro
 [root@ c7m01 ~]# mysql -uroot -p123456 -e "CHANGE MASTER TO MASTER_HOST='10.0.0.42',MASTER_PORT=3306, MASTER_AUTO_POSITION=1, MASTER_USER='rep', MASTER_PASSWORD='123456';"
 
 [root@ c7m01 ~]# mysql -uroot -p123456 -e 'start slave;'
-[root@ c7m01 ~]# mysql -uroot -p123456 -e 'show slave status\G;'
+[root@ c7m01 ~]# mysql -uroot -p123456 -e 'show slave status\G'
 ```
 
-![1578467339681](assets/1578467339681.png)
+![1582268827383](assets/1582268827383.png)
 
-此时，重新在将[server1]标签添加到MHA配置文件，并且启动MHA。
+②重新在将[server1]标签添加到MHA配置文件，并且启动MHA。
 
 ```shell
-[root@ c7m01 ~]# sed -i -e '/server2/i  \
+[root@ c704 ~]# sed -i -e '/server2/i  \
 [server1] \
 hostname=10.0.0.41 \
 port=3306 \
 ' /etc/mha/app1.cnf
-
-[root@ c703 ~]# nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log2>&1 &
 ```
+
+③重新启动MHA
+
+```
+[root@ c704 ~]# nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log2>&1 &
+```
+
+
 
 
 
 ## 2.5 配置vip飘移
 
-
-
 ### 2.5.1 IP漂移的两种方式
 
-​	通过keepalived的方式，管理虚拟IP的漂移。
-​	通过MHA自带脚本的方式，管理虚拟IP的漂移    #用mha自带的一个VIP漂移的脚本，哪个提升为主，就飘到那个上面，要根据binlog最新的slave提升。
-
-
+​	①通过keepalived的方式，管理虚拟IP的漂移。
+​	②通过MHA自带脚本的方式，管理虚拟IP的漂移    #用mha自带的一个VIP漂移的脚本，哪个提升为主，就飘到那个上面，要根据binlog最新的slave提升。
 
 ### 2.5.2 MHA脚本方式
 
 **修改MHA配置文件**
 
 ```
-[root@ c703 ~]# vim /etc/mha/app1.cnf
+[root@ c704 ~]# vim /etc/mha/app1.cnf
 
 [server default]
 master_ip_failover_script=/usr/bin/master_ip_failover
 ```
 
-![1579142735467](assets/1579142735467.png)
-
-
+![1582271057229](assets/1582271057229.png)
 
 **编写飘移脚本**
 
 注意：修改脚本中的网卡名和IP地址。
 
 ```perl
-[root@ c703 ~]# vim /usr/bin/master_ip_failover
+[root@ c704 ~]# vim /usr/bin/master_ip_failover
 
 #!/usr/bin/env perl
 
@@ -746,46 +749,110 @@ chmod +x /usr/bin/master_ip_failover
 ### 2.5.3 手动绑定vip
 
 ```shell
-[root@ c7m01 ~]# ifconfig ens33:1 10.0.0.49/24
+[root@ c702 ~]# ifconfig ens33:1 10.0.0.49/24
+[root@ c702 ~]# ip a show ens33
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 00:0c:29:72:8b:cf brd ff:ff:ff:ff:ff:ff
+    inet 10.0.0.42/24 brd 10.0.0.255 scope global ens33
+       valid_lft forever preferred_lft forever
+    inet 10.0.0.49/24 brd 10.0.0.255 scope global secondary ens33:1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::20c:29ff:fe72:8bcf/64 scope link
+       valid_lft forever preferred_lft forever
 ```
-
-![1579145552310](assets/1579145552310.png)
 
 ### 2.5.4 重启MHA
 
 ```shell
-[root@ c703 ~]# masterha_stop --conf=/etc/mha/app1.cnf
+[root@ c704 ~]# masterha_stop --conf=/etc/mha/app1.cnf
 
-[root@ c703 ~]# nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log  2>&1 &
+[root@ c704 ~]# nohup masterha_manager --conf=/etc/mha/app1.cnf  --remove_dead_master_conf --ignore_last_failover < /dev/null >  /var/log/mha/app1/manager.log  2>&1 &
 ```
 
 
 
 ### 2.6 模拟主库宕机vip飘移
 
-**关闭c7m01上的主库mysql**
+**关闭c702上的主库mysql**
 
-![1579155926966](assets/1579155926966.png)
+```shell
+[root@ c702 ~]# ifconfig ens33:1 10.0.0.49/24
+[root@ c702 ~]# ip a show ens33
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 00:0c:29:72:8b:cf brd ff:ff:ff:ff:ff:ff
+    inet 10.0.0.42/24 brd 10.0.0.255 scope global ens33
+       valid_lft forever preferred_lft forever
+    inet 10.0.0.49/24 brd 10.0.0.255 scope global secondary ens33:1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::20c:29ff:fe72:8bcf/64 scope link
+       valid_lft forever preferred_lft forever
+[root@ c702 ~]# systemctl stop mysql
 
-**查看c702上mysql的master状态和vip**
+#注意此处vip飘移有几秒延迟
+[root@ c702 ~]# ip a show ens33
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 00:0c:29:72:8b:cf brd ff:ff:ff:ff:ff:ff
+    inet 10.0.0.42/24 brd 10.0.0.255 scope global ens33
+       valid_lft forever preferred_lft forever
+    inet6 fe80::20c:29ff:fe72:8bcf/64 scope link
+       valid_lft forever preferred_lft forever
+```
 
-![1579156006788](assets/1579156006788.png)
+**现在查看c7m01上mysql的master状态和vip**
+
+```shell
+[root@ c7m01 ~]# ip a show ens33
+2: ens33: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 00:0c:29:67:f9:f8 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.0.41/24 brd 10.0.0.255 scope global ens33
+       valid_lft forever preferred_lft forever
+    inet 10.0.0.49/24 brd 10.0.0.255 scope global secondary ens33:1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::20c:29ff:fe67:f9f8/64 scope link
+       valid_lft forever preferred_lft forever
+       
+[root@ c7m01 ~]# mysql -uroot -p123456 -e 'show master status\G'
+Warning: Using a password on the command line interface can be insecure.
+*************************** 1. row ***************************
+             File: mysql-bin.000006
+         Position: 946
+     Binlog_Do_DB:
+ Binlog_Ignore_DB:
+Executed_Gtid_Set: 60923edc-2d3c-11ea-8f2a-000c2967f9f8:1-8,
+e52ff5a8-2dcc-11ea-92d9-000c29728bcf:1-4
+
+```
 
 
 
 # 3. Mysql之Atlas(读写分离)
 
-数据库中间件Atlas与Mycat比较-分库分表压测报告 <https://blog.csdn.net/lizhitao/article/details/71680714>
+​	数据库中间件Atlas与Mycat比较-分库分表压测报告 <https://blog.csdn.net/lizhitao/article/details/71680714>
 
-　Atlas 是由 Qihoo 360公司Web平台部基础架构团队开发维护的一个基于MySQL协议的数据中间层项目。它在MySQL官方推出的MySQL-Proxy 0.8.2版本的基础上，修改了大量bug，添加了很多功能特性。目前该项目在360公司内部得到了广泛应用，很多MySQL业务已经接入了Atlas平台，每天承载的读写请求数达几十亿条。
+​	Atlas 是由 Qihoo 360公司Web平台部基础架构团队开发维护的一个基于MySQL协议的数据中间层项目。它在MySQL官方推出的MySQL-Proxy 0.8.2版本的基础上，修改了大量bug，添加了很多功能特性。目前该项目在360公司内部得到了广泛应用，很多MySQL业务已经接入了Atlas平台，每天承载的读写请求数达几十亿条。
 　　源码Github： https://github.com/Qihoo360/Atlas
+
+## 3.1 什么是读写分离
+
+​	读写分离，基本的原理是让主数据库处理事务性增、删、改操作（INSERT、DELETE、UPDATE），而从数据库处理SELECT查询操作。数据库复制被用来把书屋性操作导致的变更同步到集群中的从数据库。
+
+## 3.2 为什么读写分离
+
+​	因为数据库的“写”（写10000条数据到oracle可能要3分钟）操作是比较耗时的。 但是数据库的“读”（从oracle读10000条数据可能只要5秒钟）。 所以读写分离，解决的是，数据库的写入，影响了查询的效率。
+
+## 3.3 什么时候要读写分离
+
+​	数据库不一定要读写分离，如果程序使用数据库较多时，而更新少，查询多的情况下会考虑使用，利用数据库 主从同步 。可以减少数据库压力，提高性能。当然，数据库也有其它优化方案。memcache 或是 表折分，或是搜索引擎。都是解决方法。
 
 ## 3.1 Atlas的功用与应用场景
 
-Atlas的功能有：读写分离、从库负载均衡、自动分表、IP过滤、SQL语句黑白名单、DBA可平滑上下线DB、自动摘除宕机的DB
-Atlas的使用场景：Atlas是一个位于前端应用与后端MySQL数据库之间的中间件，它使得应用程序员无需再关心读写分离、分表等与MySQL相关的细节，可以专注于编写业务逻辑，同时使得DBA的运维工作对前端应用透明，上下线DB前端应用无感知
+Atlas的功能有：
 
+​	读写分离、从库负载均衡、自动分表、IP过滤、SQL语句黑白名单、DBA可平滑上下线DB、自动摘除宕机的DB。
 
+Atlas的使用场景：
+
+​	Atlas是一个位于前端应用与后端MySQL数据库之间的中间件，它使得应用程序员无需再关心读写分离、分表等与MySQL相关的细节，可以专注于编写业务逻辑，同时使得DBA的运维工作对前端应用透明，上下线DB前端应用无感知。
 
 ## 3.2 Atlas的安装过程
 
@@ -798,7 +865,9 @@ Atlas的使用场景：Atlas是一个位于前端应用与后端MySQL数据库�
 
 ```shell
 1.安装altas
-rpm -ivh Atlas-2.2.1.el6.x86_64.rpm 
+[root@ c704 ~]# 
+wget https://github.com/Qihoo360/Atlas/releases/download/2.2.1/Atlas-2.2.1.el6.x86_64.rpm
+[root@ c704 ~]# rpm -ivh Atlas-2.2.1.el6.x86_64.rpm
 
 2.修改配置文件
 cp /usr/local/mysql-proxy/conf/test.cnf{,.bak}
@@ -807,7 +876,7 @@ vim /usr/local/mysql-proxy/conf/test.cnf
 admin-username = user
 admin-password = pwd
 proxy-backend-addresses = 10.0.0.49:3306 # 设置写入主库vip的地址
-proxy-read-only-backend-addresses = 10.0.0.43:3306 # 设置只读的从库地址
+proxy-read-only-backend-addresses = 10.0.0.42:3306,10.0.0.43:3306 # 设置只读的从库地址
 pwds = rep:/iZxz+0GRoA=,mha:O2jBXONX098= # 设置数据库管理用户，加密方法：/usr/local/mysql-proxy/bin/encrypt  密码
 daemon = true
 keepalive = true
@@ -820,7 +889,10 @@ admin-address = 0.0.0.0:2345
 charset=utf8
 
 3.启动atlas
-/usr/local/mysql-proxy/bin/mysql-proxyd test start
+#Atlas可以通过不同配置文件，同时启动多个Atlas代理多套MHA节点；
+/usr/local/mysql-proxy/bin/mysql-proxyd test start   #启动
+/usr/local/mysql-proxy/bin/mysql-proxyd test stop    #停止
+/usr/local/mysql-proxy/bin/mysql-proxyd test restart #重启
 
 4.查看atlas
 ps -ef | grep  mysql-proxy
@@ -830,9 +902,157 @@ ps -ef | grep  mysql-proxy
 
 ## 3.3 Atlas读写分离测试
 
+**读测试：**
+
+```shell
+[root@ c704 ~]# mysql -umha -pmha -P1234 -h10.0.0.44
+mysql> select @@server_id;
++-------------+
+| @@server_id |
++-------------+
+|           3 |
++-------------+
+1 row in set (0.01 sec)
+
+mysql> select @@server_id;
++-------------+
+| @@server_id |
++-------------+
+|           2 |
++-------------+
+1 row in set (0.00 sec)
+
+```
+
+注：发现上面 'server_id每次的结果都不一样，分别是2台从库的server_id，并且每执行一次命令，server_id就会变换一次，这是因为默认读操作的权重都是1，两台从DB默认就是负载均衡。
+
+**写测试：**
+
+```shell
+[root@ c704 ~]# mysql -umha -pmha -P1234 -h10.0.0.44
+
+mysql> begin;select @@server_id;commit;
+ERROR 2013 (HY000): Lost connection to MySQL server during query
+ERROR 2006 (HY000): MySQL server has gone away
+No connection. Trying to reconnect...
+Connection id:    16
+Current database: *** NONE ***
+
+#此报错是，连不上写的数据库，注意vip是否已经绑定到机器上
+
+mysql> begin;select @@server_id;commit;
+Query OK, 0 rows affected (0.00 sec)
++-------------+
+| @@server_id |
++-------------+
+|           2 |
++-------------+
+1 row in set (0.00 sec)
+
+mysql> create database www;
+Query OK, 1 row affected (0.00 sec)
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| www                |
++--------------------+
+4 rows in set (0.01 sec)
+```
 
 
 
+## 3.4 Atlas管理操作
 
+**登入管理接口**
 
+```shell
+[root@ c704 ~]# mysql -uuser -ppwd -P2345 -h10.0.0.44
+```
+
+**查看帮助信息**
+
+```sql
+mysql> SELECT * FROM help;
++----------------------------+---------------------------------------------------------+
+| command                    | description                                             |
++----------------------------+---------------------------------------------------------+
+| SELECT * FROM help         | shows this help                                         |
+| SELECT * FROM backends     | lists the backends and their state                      |
+| SET OFFLINE $backend_id    | offline backend server, $backend_id is backend_ndx's id |  
+| SET ONLINE $backend_id     | online backend server, ...                              |
+| ADD MASTER $backend        | example: "add master 127.0.0.1:3306", ...               |
+| ADD SLAVE $backend         | example: "add slave 127.0.0.1:3306", ...                |
+| REMOVE BACKEND $backend_id | example: "remove backend 1", ...                        |
+| SELECT * FROM clients      | lists the clients                                       |
+| ADD CLIENT $client         | example: "add client 192.168.1.2", ...                  |
+| REMOVE CLIENT $client      | example: "remove client 192.168.1.2", ...               |
+| SELECT * FROM pwds         | lists the pwds                                          |
+| ADD PWD $pwd               | example: "add pwd user:raw_password", ...               |
+| ADD ENPWD $pwd             | example: "add enpwd user:encrypted_password", ...       |
+| REMOVE PWD $pwd            | example: "remove pwd user", ...                         |
+| SAVE CONFIG                | save the backends to config file                        |
+| SELECT VERSION             | display the version of Atlas                            |
++----------------------------+---------------------------------------------------------+
+```
+
+**查看后端的代理库**
+
+```shell
+mysql> SELECT * FROM backends;
++-------------+----------------+-------+------+
+| backend_ndx | address        | state | type |
++-------------+----------------+-------+------+
+|           1 | 10.0.0.49:3306 | up    | rw   |
+|           2 | 10.0.0.42:3306 | up    | ro   |
+|           3 | 10.0.0.43:3306 | up    | ro   |
++-------------+----------------+-------+------+
+```
+
+**下线后端节点**
+
+```shell
+mysql> SET OFFLINE 3;
++-------------+----------------+---------+------+
+| backend_ndx | address        | state   | type |
++-------------+----------------+---------+------+
+|           3 | 10.0.0.43:3306 | offline | ro   |
++-------------+----------------+---------+------+
+1 row in set (0.00 sec)
+
+mysql> SELECT * FROM backends;
++-------------+----------------+---------+------+
+| backend_ndx | address        | state   | type |
++-------------+----------------+---------+------+
+|           1 | 10.0.0.49:3306 | up      | rw   |
+|           2 | 10.0.0.42:3306 | up      | ro   |
+|           3 | 10.0.0.43:3306 | offline | ro   |
++-------------+----------------+---------+------+
+```
+
+**上线后端节点**
+
+```shell
+mysql> SET ONLINE 3;
++-------------+----------------+---------+------+
+| backend_ndx | address        | state   | type |
++-------------+----------------+---------+------+
+|           3 | 10.0.0.43:3306 | unknown | ro   |
++-------------+----------------+---------+------+
+1 row in set (0.00 sec)
+
+mysql> SELECT * FROM backends;
++-------------+----------------+-------+------+
+| backend_ndx | address        | state | type |
++-------------+----------------+-------+------+
+|           1 | 10.0.0.49:3306 | up    | rw   |
+|           2 | 10.0.0.42:3306 | up    | ro   |
+|           3 | 10.0.0.43:3306 | up    | ro   |
++-------------+----------------+-------+------+
+3 rows in set (0.00 sec)
+```
 
