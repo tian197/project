@@ -2,11 +2,15 @@
 
 
 
-# Nginx 配置 HTTPS 服务器
+# Nginx配置HTTPS
 
 ## 什么是https？
 
-​	`https` 全称：`Hyper Text Transfer Protocol over Secure Socket Layer`，是http的安全版。即http下加入SSL协议层，因此https的安全基础就是SSL，所以加密内容需要SSL。
+HTTP：是互联网上应用最为广泛的一种网络协议，是一个客户端和服务器端请求和应答的标准（TCP），用于从WWW服务器传输超文本到本地浏览器的传输协议，它可以使浏览器更加高效，使网络传输减少。
+
+HTTPS：全称：Hyper Text Transfer Protocol over Secure Socket Layer，则是以安全为目标的HTTP通道，简单讲是HTTP的安全版，即HTTP下加入SSL层，HTTPS的安全基础是SSL，因此加密的详细内容就需要SSL。
+
+HTTPS协议的主要作用可以分为两种：一种是建立一个信息安全通道，来保证数据传输的安全；另一种就是确认网站的真实性。
 
 ## 配置过程
 
@@ -42,15 +46,29 @@
 
 
 
+### Certbot申请
+
+官网：<https://certbot.eff.org/>
+
+Let’s Encrypt提供了免费的证书申请服务，同时也提供了官方客户端 Certbot，打开首页，就可以得到官方的安装教程。官方教程给出了四种常用服务器和不同的Linux、Unix的安装使用方案，可以说是十分的贴心了。
+
+![6023080-46b89fc91bd3ef7a](assets/6023080-46b89fc91bd3ef7a.jpg)
+
+
+
+### openssl自签证书
 
 
 
 
 
+## 自签证书测试
 
+### 安装nginx
 
-
-
+```shell
+yum -y install nginx
+```
 
 
 

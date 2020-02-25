@@ -80,8 +80,6 @@ purge_relay_logs                清除中继日志（不会阻塞SQL线程）
 |  c704  | 10.0.0.44 | centos7.2 |     mha+atlas     | mysql5.6-client，mha4mysql-manager，mha4mysql-node，atlas |
 |        | 10.0.0.49 | centos7.2 |        VIP        |                    绑定到mysql-master                     |
 
-注：先在每台机器上装好mysql5.6。
-
 
 
 ## 2.2 环境准备
@@ -124,7 +122,7 @@ yum -y install sshpass
 
 #!/bin/bash
 UserName=root
-IPlist=(10.0.0.41 10.0.0.42 10.0.0.43 10.0.0.44)
+IPlist=(10.0.0.45 10.0.0.42 10.0.0.43 10.0.0.44 )
 #创建密钥
 ssh-keygen -t dsa -f ~/.ssh/id_dsa -P "" &>/dev/null
 #分发公钥
@@ -260,8 +258,8 @@ mysql> stop slave;
 change master to master_host='10.0.0.41',
 master_user='rep',
 master_password='123456',
-master_log_file='mysql-bin.000005',
-master_log_pos=191;
+master_log_file='mysql-bin.000001',
+master_log_pos=527;
 ```
 
 开启从服务器的复制功能
@@ -832,7 +830,7 @@ e52ff5a8-2dcc-11ea-92d9-000c29728bcf:1-4
 
 ## 3.1 什么是读写分离
 
-​	读写分离，基本的原理是让主数据库处理事务性增、删、改操作（INSERT、DELETE、UPDATE），而从数据库处理SELECT查询操作。数据库复制被用来把书屋性操作导致的变更同步到集群中的从数据库。
+​	读写分离，基本的原理是让主数据库处理事务性增、删、改操作（INSERT、DELETE、UPDATE），而从数据库处理SELECT查询操作。数据库复制把主数据库操作的变更同步到集群中的从数据库。
 
 ## 3.2 为什么读写分离
 
