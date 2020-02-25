@@ -6,6 +6,16 @@
 
 
 
+# Jenkins+Gitlab持续集成
+
+
+
+
+
+
+
+
+
 # GitLab的安装及使用教程
 
 ## GitLab安装
@@ -96,16 +106,4 @@ sudo vim /etc/gitlab/gitlab.rb # 修改默认的配置文件；
 gitlab-rake gitlab:check SANITIZE=true --trace # 检查gitlab；
 sudo gitlab-ctl tail # 查看日志；
 ```
-
-
-
-
-
-
-
-
-
-
-
-
 
