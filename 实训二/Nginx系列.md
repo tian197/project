@@ -42,75 +42,100 @@
 
 # 正向代理
 
-**说明：**
+> 注意：Nginx本身不支持HTTPS正向代理，需要安装ngx_http_proxy_connect_module模块后才可以支持HTTPS正向代理，否则会遇到HTTP 400错误。
 
-nginx当正向代理的时候，通过代理访问https的网站会失败，而失败的原因是客户端同nginx代理服务器之间建立连接失败，并非nginx不能将https的请求转发出去。因此要解决的问题就是客户端如何同nginx代理服务器之间建立起连接。有了这个思路之后，就可以很简单的解决问题。我们可以配置两个SERVER节点，一个处理HTTP转发，另一个处理HTTPS转发，而客户端都通过HTTP来访问代理，通过访问代理不同的端口，来区分HTTP和HTTPS请求。 
+参考文档：
 
-## **1.修改nginx.conf配置文件** 
+- <https://github.com/chobits/ngx_http_proxy_connect_module>
 
-生成用户密码文件 
 
-```shell
-htpasswd ‐c /etc/nginx/passwords wjj 
+
+## 安装Nginx和模块
+
+```
+yum -y install make zlib zlib-devel gcc-c++ libtool  openssl openssl-devel  wget pcre pcre-devel git
+git clone https://github.com/chobits/ngx_http_proxy_connect_module.git
+wget http://nginx.org/download/nginx-1.14.2.tar.gz
+tar -xzvf nginx-1.14.2.tar.gz
+cd nginx-1.14.2/
+patch -p1 <../ngx_http_proxy_connect_module/patch/proxy_connect_1014.patch
+./configure  --with-http_stub_status_module --with-http_ssl_module --add-module=../ngx_http_proxy_connect_module
+make && make install
 ```
 
-修改nginx 
+## **虚拟主机配置**
 
-```shell
-http { 
-include /etc/nginx/conf.d/*.conf; 
-	resolver 8.8.8.8; 
-server { 
-	listen 90; 
-	server_name _; 
-	auth_basic "User Authentication"; 
-	auth_basic_user_file /etc/nginx/passwords; 
-location / { 
-	proxy_pass http://$http_host$request_uri; 
-		} 
-	}
-} 
+```
+[root@ docker ~]# mkdir -p /usr/local/nginx/conf/conf.d/
+
+[root@ docker ~]# vim /usr/local/nginx/conf/nginx.conf
+user  nobody;
+worker_processes  1;
+events {
+	worker_connections  1024;
+}
+http {
+	include       mime.types;
+	default_type  application/octet-stream;
+	sendfile        on;
+	keepalive_timeout  65;
+	include /usr/local/nginx/conf/conf.d/*.conf;
+
+}
+
+[root@ docker ~]# vim /usr/local/nginx/conf/conf.d/test.conf
+server {
+        listen 90;
+        server_name 10.0.0.90;
+        resolver 223.5.5.5;
+        proxy_connect;
+        proxy_connect_allow            443 563;
+        proxy_connect_connect_timeout  10s;
+        proxy_connect_read_timeout     10s;
+        proxy_connect_send_timeout     10s;
+location / {
+        proxy_pass http://$host;
+        proxy_set_header Host $host;
+        }
+}
 ```
 
-重启nginx 
-
-
-
-## 2.客户端配置 
+## 客户端配置 
 
 **全局的代理设置：** 
 
 ```shell
-vi /etc/profile 
+vim /etc/profile
 ##代理
-export http_proxy=http://用户:密码@ip:port 
-export https_proxy=http://用户:密码@ip:port 
-export ftp_proxy=http://用户:密码@ip:port 
+export http_proxy=http://10.0.0.90:90
+export https_proxy=http://10.0.0.90:90
+export ftp_proxy=http://10.0.0.90:90
 ```
 
 **yum的代理设置：** 
 
 ```shell
-vi /etc/yum.conf 
-proxy=http://username:password@yourproxy:8080/ 
+vim /etc/yum.conf 
+proxy=http://http://10.0.0.90:90
 ```
 
 **wget的代理设置：** 
 
 ```shell
-vi /etc/wgetrc 
-http_proxy=http://username:password@proxy_ip:port/ 
-ftp_proxy=http://username:password@proxy_ip:port/ 
+vim /etc/wgetrc 
+http_proxy=hhttp://10.0.0.90:90
+ftp_proxy=http://10.0.0.90:90
 ```
 
-## 3.测试代理
+## 测试代理
 
 **方法一：** 
 
 访问HTTP网站，可以直接这样的方式:
 
 ```shell
-curl ‐I ‐‐proxy proxy_server‐ip:80 www.baidu.com 
+curl ‐I ‐‐proxy 10.0.0.90:90 http://www.baidu.com
+curl ‐I ‐‐proxy 10.0.0.90:90 https://www.baidu.com
 ```
 
 **方法二：** 
@@ -123,7 +148,7 @@ curl ‐I ‐‐proxy proxy_server‐ip:80 www.baidu.com
 
 ![1582623570881](./assets/1582623570881.png)
 
-![1582623578859](./assets/1582623578859.png)
+![1582880069845](assets/1582880069845.png)
 
 **如何确定访问是不是走的代理那？** 
 
@@ -139,7 +164,7 @@ curl ‐I ‐‐proxy proxy_server‐ip:80 www.baidu.com
 
 
 
-# Nginx配置HTTPS
+# 配置HTTPS
 
 ## 什么是https？
 
@@ -206,4 +231,175 @@ Let’s Encrypt提供了免费的证书申请服务，同时也提供了官方�
 ```shell
 yum -y install nginx
 ```
+
+### 检查Nginx的SSL模块
+
+```shell
+[root@ docker ~]# nginx -V
+nginx version: nginx/1.16.1
+built by gcc 4.8.5 20150623 (Red Hat 4.8.5-39) (GCC)
+built with OpenSSL 1.0.2k-fips  26 Jan 2017
+TLS SNI support enabled
+configure arguments: --prefix=/usr/share/nginx --sbin-path=/usr/sbin/nginx --modules-
+--with-http_ssl_module --with-http_v2_module --with-http_realip_module --with-stream_ssl_preread_module 
+```
+
+### 准备私钥和证书
+
+创建私钥
+
+```shell
+[root@ docker ~]# cd /etc/nginx/
+[root@ docker nginx]# mkdir -p ssl
+[root@ docker nginx]# cd ssl/
+[root@ docker ssl]# openssl genrsa -des3 -out server.key 1024
+Enter pass phrase for server.key:123456
+Verifying - Enter pass phrase for server.key:123456
+[root@ docker ssl]# ll
+total 4
+-rw-r--r-- 1 root root 963 2020-02-26 02:43 server.key
+```
+
+签发证书
+
+```shell
+[root@ docker ssl]# openssl req -new -key server.key -out server.csr
+Enter pass phrase for server.key: 123456
+
+Country Name (2 letter code) [XX]:CN
+State or Province Name (full name) []:BJ
+Locality Name (eg, city) [Default City]:BJ
+Organization Name (eg, company) [Default Company Ltd]:SDU
+Organizational Unit Name (eg, section) []:BJ
+Common Name (eg, your name or your server's hostname) []:wjj
+Email Address []:602616568@qq.com
+
+A challenge password []:回车
+An optional company name []:回车
+
+```
+
+删除私钥口令
+
+```
+[root@ docker ssl]# cd /etc/nginx/ssl
+[root@ docker ssl]# cp server.key server.key.ori
+[root@ docker ssl]# openssl rsa -in server.key.ori -out server.key
+Enter pass phrase for server.key.ori:123456
+```
+
+生成使用签名请求证书和私钥生成自签证书
+
+```shell
+[root@ docker ssl]# openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+
+Signature ok
+subject=/C=CN/ST=BJ/L=BJ/O=SDU/OU=BJ/CN=wjj/emailAddress=602616568@qq.com
+Getting Private key
+Enter pass phrase for server.key:密码
+```
+
+开启Nginx SSL
+
+```shell
+创建虚拟主机
+[root@ docker conf.d]# mkdir -p /etc/nginx/html
+[root@ docker conf.d]# vim hack.conf
+server {
+    listen       443 ssl;
+    server_name  www.hack.com;
+
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+
+    # Load configuration files for the default server block.
+    include /etc/nginx/default.d/*.conf;
+
+    location / {
+    #定义站点目录
+        root    /etc/nginx/html;
+    }
+
+    error_page 404 /404.html;
+        location = /40x.html {
+    }
+
+    error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+    }
+}
+
+[root@ docker conf.d]# nginx -t
+[root@ docker conf.d]# nginx -s reload
+```
+
+绑定windows的hosts，然后谷歌浏览器访问`https://www.hack.com/hack.html`。
+
+```
+10.0.0.90 www.hack.com
+```
+
+![1582706367414](assets/1582706367414.png)
+
+此时，你会发现，`http://www.hack.com/hack.html`，浏览器访问不了了（注意浏览器缓存），这时就需要将80端口重定向到443端口。
+
+### rewrite跳转
+
+以上配置有个不好的地方，如果用户忘了使用https或者443端口，那么网站将无法访问，因此需要将80端口的访问转到443端口并使用ssl加密访问。只需要增加一个server段，使用301永久重定向。
+
+```shell
+[root@ docker conf.d]# vim hack.conf
+server {
+    listen 80;
+    server_name www.hack.com;
+    rewrite ^(.*) https://$server_name$1 permanent;
+}
+
+server {
+    listen       443 ssl;
+    server_name  www.hack.com;
+
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+
+    # Load configuration files for the default server block.
+    include /etc/nginx/default.d/*.conf;
+
+    location / {
+    #定义站点目录
+        root    /etc/nginx/html;
+    }
+
+    error_page 404 /404.html;
+        location = /40x.html {
+    }
+
+    error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+    }
+}
+
+[root@ docker conf.d]# nginx -t
+[root@ docker conf.d]# nginx -s reload
+```
+
+这时，浏览器访问`http://www.hack.com/hack.html`，nginx会将请求跳转到`https://www.hack.com/hack.html`，详细可以查看nginx日志。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
