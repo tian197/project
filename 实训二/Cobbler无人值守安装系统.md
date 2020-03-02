@@ -92,7 +92,7 @@ cobbler官方网站：http://cobbler.github.io/
 cobbler        #cobbler程序包
 cobbler-web     #cobbler的web服务包
 pykickstart    #cobbler检查kickstart语法错误
-httpd      #Apache web服务
+httpd      	#Apache web服务
 dhcp       #Dhcp服务
 tftp      #tftp服务
 xinetd　　#诸多服务的超级守护进程
@@ -171,6 +171,7 @@ $1$random-p$mzxQ/Sx848sXgvfwJCoZM0
 
 #解决完后再次检查
 [root@ cobbler ~]# systemctl restart cobblerd
+[root@ cobbler ~]# cobbler sync
 [root@ cobbler ~]# cobbler check
 No configuration problems found.  All systems go.
 ```
@@ -356,7 +357,7 @@ Virt RAM (MB)                  : 512
 Virt Type                      : kvm
 ```
 
-## 1.6.6 编辑centos6.8镜像使用的kickstart文件
+## 1.6.6 编辑centos6.8镜像的kickstart文件
 
 ```shell
 [root@ cobbler ~]# cd /var/lib/cobbler/kickstarts/
@@ -510,4 +511,46 @@ Kickstart Metadata             : {}
 # 1.8 cobbler Web界面配置
 
 web界面有很多功能，包括上传镜像、编辑kickstart、等等很多在命令行操作的都可以在web界面直接操作。
-在上面已经安装了cobbler-web软件，访问地址：https://IP/cobbler_web 即可。默认账号为cobbler，密码也为cobbler
+在上面已经安装了cobbler-web软件，访问地址：https://10.0.0.44/cobbler_web 即可。
+
+默认账号为cobbler，密码也为cobbler
+
+![1583137335378](assets/1583137335378.png)
+
+![1583137427928](assets/1583137427928.png)
+
+修改cobbler登录密码
+
+```shell
+/etc/cobbler/users.conf     #Web服务授权配置文件
+/etc/cobbler/users.digest   #用于web访问的用户名密码
+
+[root@cobbler ~]# cat /etc/cobbler/users.digest 
+cobbler:Cobbler:a2d6bae81669d707b72c0bd9806e01f3
+
+# 设置密码，在Cobbler组添加cobbler用户，输入2遍密码确
+[root@cobbler ~]# htdigest /etc/cobbler/users.digest "Cobbler" cobbler
+Changing password for user cobbler in realm Cobbler
+New password: superman
+Re-type new password: superman
+
+# 同步配置并重启httpd、cobbler
+[root@cobbler ~]# cobbler sync
+[root@cobbler ~]# systemctl restart httpd
+[root@cobbler ~]# systemctl restart cobblerd
+```
+
+再次登录即使用新设置的密码登录即可。
+
+
+
+
+
+
+
+
+
+
+
+
+
