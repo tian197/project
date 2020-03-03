@@ -12,21 +12,15 @@
 
 # 1.1 VPN介绍
 
-VPN直译就是虚拟专用通道，是提供给企业之间或者个人与公司之间安全数据传输的隧道，可以对网络加密，使得其安全性能提升，OpenVPN无疑是Linux下开源VPN的先锋，提供了良好的性能和友好的用户GUI。
+VPN（全称Virtual Private Network），直译就是虚拟专用网络，是提供给企业之间或者个人与公司之间安全数据传输的隧道，可以对网络加密，使得其安全性能提升，OpenVPN无疑是Linux下开源VPN的先锋，提供了良好的性能和友好的用户GUI。
 
-常用的VPN协议有PPTP、L2TP、OpenVPN
+（1）依靠ISP和其他的NSP，在公共网络中建立专用的数据通信网络的技术，可以为企业之间或个人与企业之间提供安全的数据传输隧道服务
 
-PPTP、L2TP、OpenVPN三种隧道协议的优缺点对比
+（2）在VPN中任意两点之间的连接并没有传统专网所需的端到端的物理链路，而是利用公共网络资源动态组成的，可以理解为通过私有的隧道技术在公共数据网络上模拟出来和专用有同样功能的点到点的专线技术
 
-易用性： PPTP > L2TP > OpenVPN
+（3）所谓虚拟是指不需要去拉实际的长途物理线路，而是借用了公共的Internet网络实现。
 
-速度： PPTP > OpenVPN UDP > L2TP > OpenVPN TCP
-
-安全性： OpenVPN > L2TP > PPTP
-
-稳定性： OpenVPN > L2TP > PPTP
-
-网络适用性：OpenVPN > PPTP > L2TP
+（4）类似VPN隧道：SSH，LVS，TUN（IPIP），PPTP，IPsec，OpenVPN
 
 
 
@@ -40,18 +34,69 @@ openvpn使用TLS加密的工作过程是，首先VPN Sevrver端和VPN Client端�
 
 
 
-## 1.1.2 应用场景
+## 1.1.2 企业应用分类
 
-- Peer-to-Peer VPN(点对点连接)，这种场景，将Internet 两台机器（公网地址）使用VPN连接起来
-- Remote AccessVPN(远程访问)，该实现方案，旨在解决，移动办公，经常出差不在办公室的，公司生产环境连接。在这个场景种远程访问者一般没有公网IP，他们使用内网地址通过防火墙设备及逆行NAT转换后连接互联网
-- SIte-to-Site VPN(站点对站点连接) ，用于连接两个或者多个地域上不同的局域网LAN，每个LAN有一台OpenVPN
-  服务器作为接入点，组成虚拟专用网络，使得不同LAN里面的主机和服务器都能够相互通讯
+（1）远程访问VPN服务
+
+​	员工个人电脑通过远程拨号到企业办公网络，如公司的OA系统
+
+​	运维人员远程拨号到IDC机房，远程维护服务器
+
+（2）企业内部网络之间VPN服务
+
+​	公司分支机构的局域网和总公司的LAN之间的VPN连接，如各大超市之间的业务结算等
+
+（3）互联网公司多IDC机房之间VPN服务
+
+​	不同机房之间业务管理和业务访问，数据流动
+
+（4）企业外部VPN服务
+
+​	在供应商，合作伙伴的LAN和本公司的LAN之间建立VPN服务
+
+（5）访问国外的网站
+
+​	翻墙业务应用
+
+
+
+## 1.1.3 常见隧道协议介绍
+
+（1）PPTP：点对点隧道协议，默认端口号1723，工作在第二层，PPTP使用TCP协议，适合在没有防火墙限制的网络中使用，比较适合远程的企业用户拨号到楪祈内部进行办公等应用
+
+（2）L2TP
+
+（3）IPSEC
+
+（4）SSL VPN----Open VPN
+
+
+
+## 1.1.4 实现VPN的常见开源产品
+
+（1）PPTP VPN最大优势Windows原生支持，不需要安装客户端；缺点是很多小区及网络设备不支持pptp导致无法访问，开源软件pptp
+
+（2）SSL VPN 典型Open VPN，不但适合用于pptp的场景，还适合对企业异地两地总分公司之间的VPN不间断按需连接，切断需要安装客户端
+
+（3）IPSEC VPN适合针对企业异地两地总分公司或多个IDC机房之间的VPN不间断按需连接，并且在部署使用上更简单方便，开源产品openswan小结：
+
+易用性：PPTP > L2TP > Open VPN
+
+速度：PPTP > Open VPN UDP > L2TP > Open VPN TCP 
+
+安全性：Open VPN > L2TP > PPTP
+
+稳定性：Open VPN > L2TP > PPTP
+
+网络适用性：Open VPN > PPTP > L2TP 
+
+
+
+
 
 
 
 # 1.2 安装部署
-
-
 
 ## 1.2.1 环境介绍
 
@@ -355,9 +400,6 @@ Certificate created at: /etc/openvpn/easy-rsa/easyrsa3/pki/issued/client1.crt
 
 ```shell
 [root@ openvpn easyrsa3]# cd /etc/openvpn/easy-rsa/easyrsa3/pki/
-[root@ openvpn pki]# ls
-ca.crt           dh.pem     index.txt.attr      index.txt.old  openssl-easyrsa.cnf  renewed  revoked              serial
-certs_by_serial  index.txt  index.txt.attr.old  issued         private              reqs     safessl-easyrsa.cnf  serial.old
 [root@ openvpn pki]# cp ca.crt /etc/openvpn/server/
 [root@ openvpn pki]# cp private/server.key /etc/openvpn/server/
 [root@ openvpn pki]# cp issued/server.crt /etc/openvpn/server/
@@ -370,11 +412,6 @@ certs_by_serial  index.txt  index.txt.attr.old  issued         private          
 ca.crt  dh.pem  server.crt  server.key
 [root@ openvpn pki]# ls /etc/openvpn/client/
 ca.crt  client  client1.crt  client1.key
-
-[root@ openvpn pki]# cp /usr/share/doc/openvpn-2.4.8/sample/sample-config-files/server.conf /etc/openvpn
-[root@ openvpn pki]# cd /etc/openvpn
-[root@ openvpn openvpn]# cp server.conf server.conf.bak
-[root@ openvpn openvpn]# egrep -v "^#|^;|^$" server.conf.bak > server.conf
 ```
 
 ## 1.5.2 配置server.conf
@@ -382,6 +419,11 @@ ca.crt  client  client1.crt  client1.key
 超链接配置文件 [server.conf](assets\server.conf) 
 
 ```shell
+[root@ openvpn pki]# cp /usr/share/doc/openvpn-2.4.8/sample/sample-config-files/server.conf /etc/openvpn
+[root@ openvpn pki]# cd /etc/openvpn
+[root@ openvpn openvpn]# cp server.conf server.conf.bak
+[root@ openvpn openvpn]# egrep -v "^#|^;|^$" server.conf.bak > server.conf
+
 [root@ openvpn openvpn]# vim server.conf
 local 0.0.0.0	 # 填自己openvpn服务器的 IP，默认侦听服务器上的所有ip
 port 55555		 # 侦听端口，默认1194
@@ -407,7 +449,7 @@ log /var/log/openvpn.log
 
 还有许多详细配置，可查看官网说明。
 
-## 1.5.3 配置防火墙转发并启动openvpn
+## 1.5.3 配置firewalld转发并启动openvpn
 
 ```shell
 [root@ openvpn openvpn]# systemctl stop firewalld
@@ -415,11 +457,10 @@ log /var/log/openvpn.log
 [root@ openvpn openvpn]# sysctl -p
 net.ipv4.ip_forward = 1
 [root@ openvpn openvpn]# openvpn --daemon --config /etc/openvpn/server.conf
+[root@ openvpn openvpn]# echo "openvpn --daemon --config /etc/openvpn/server.conf">>/etc/rc.d/rc.local
 [root@ openvpn openvpn]# ps -ef | grep openvpn
 [root@ openvpn openvpn]# ss -anpt| grep 55555
 ```
-
-
 
 
 
