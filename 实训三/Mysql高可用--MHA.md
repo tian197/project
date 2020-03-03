@@ -645,7 +645,7 @@ master_ip_failover_script=/usr/bin/master_ip_failover
 
 ![1582271057229](assets/1582271057229.png)
 
-**编写飘移脚本**
+**编写飘移脚本 [master_ip_failover](assets\master_ip_failover) **
 
 注意：修改脚本中的网卡名和IP地址。
 
