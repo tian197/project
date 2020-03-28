@@ -104,6 +104,7 @@ yum -y install gcc gcc-c++  cmake curl  nmap  lrzsz unzip zip ntpdate telnet vim
 
 ```shell
 sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+#安装所需的软件包 yum-utils提供了yum-config-manager实用程序， device-mapper-persistent-data和lvm2是devicemapper存储驱动程序所必需的。
 ```
 
 **添加Docker软件源**
@@ -266,6 +267,13 @@ cat >/etc/docker/daemon.json<<EOF
     "https://dockerhub.azk8s.cn",
     "https://hub-mirror.c.163.com"
   ]
+}
+EOF
+
+#阿里云
+sudo tee /etc/docker/daemon.json <<-'EOF'
+{
+  "registry-mirrors": ["https://490smrwk.mirror.aliyuncs.com"]
 }
 EOF
 ```
