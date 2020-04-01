@@ -6,9 +6,7 @@
 
 
 
-
-
-# CentOS7部署OpenVPN
+# 企业级vpn之OpenVPN
 
 # 1.1 VPN介绍
 
