@@ -98,12 +98,11 @@
     </tr>
     <tr>
         <td><a href="实训二/KVM虚拟化.md">KVM虚拟化</a></td>
-        <td><a href="实训二/Cobbler无人值守安装系统.md">Cobbler无人值守安装系统</a></td>
         <td><a href="实训二/Linux日志切割工具cronolog.md">Linux日志切割工具cronolog</a></td>
         <td><a href="实训二/Nginx系列.md">Nginx系列</a></td>
+        <td><a href="实训二/企业级VPN之OpenVPN.md">企业级VPN之OpenVPN</a></td>
     </tr>
     <tr>
-        <td><a href="实训二/企业级VPN之OpenVPN.md">企业级VPN之OpenVPN</a></td>
         <td><a href="实训二/日志切割之Logrotate.md">日志切割之Logrotate</a></td>
     </tr>
 </table>
