@@ -1,6 +1,4 @@
-# bawei
-
-## 云架构实战
+# 云架构实战
 
 <table border="0">
     <tr>
@@ -34,7 +32,7 @@
 
 
 
-## 数据库与脚本技术
+# 数据库与脚本技术
 
 <table border="0">
     <tr>
@@ -71,7 +69,7 @@
 
 
 
-## 实训一
+# 实训一
 
 - 基础知识的回顾；
 - Supervisor管理集群；
@@ -87,7 +85,7 @@
 
 
 
-## 实训二
+# 实训二
 
 <table border="0">
     <tr>
@@ -109,7 +107,7 @@
 
 
 
-## 实训三
+# 实训三
 
 <table border="0">
     <tr>
@@ -120,7 +118,19 @@
 
 
 
-## 附录
+# Kubernetes指南
+
+<table border="0">
+    <tr>
+        <td><a href="第一章 Kubernetes容器集群管理.md">第一章 Kubernetes容器集群管理</a></td>
+    </tr>
+</table>
+
+
+
+
+
+# 附录
 
 <table border="0">
     <tr>
