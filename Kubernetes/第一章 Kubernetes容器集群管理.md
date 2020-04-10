@@ -2918,8 +2918,6 @@ metadata:
 
 此时，kube-scheduler的leader为k8s-m01。
 
-****
-
 停掉 k8s-m01的kube-scheduler的服务，看其它节点是否获取了 leader 权限。
 
 ```shell
@@ -3269,7 +3267,7 @@ healthzBindAddress: "##NODE_IP##"
 clusterDomain: "${CLUSTER_DNS_DOMAIN}"
 clusterDNS:
   - "${CLUSTER_DNS_SVC_IP}"
-nodeStatusUpdateFrequency: 10s
+nodeStatusUpdateFrequency: 30s
 nodeStatusReportFrequency: 1m
 imageMinimumGCAge: 2m
 imageGCHighThresholdPercent: 85
@@ -3502,6 +3500,16 @@ kubelet文件驱动是systemd, 而docker使用的文件驱动是cgroupfs, 不一
 "exec-opts": ["native.cgroupdriver=cgroupfs"],
 ```
 
+问题二：
+
+```
+manager.go:577] Failed to retrieve checkpoint for "kubelet_internal_checkpoint": checkpoint is not found
+```
+
+重启docker和kubelet。
+
+
+
 **5、授予 kube-apiserver 访问 kubelet API 的权限**
 
 在执行 kubectl exec、run、logs 等命令时，apiserver 会将请求转发到 kubelet 的 https 端口。这里定义 RBAC 规则，授权 apiserver 使用的证书（kubernetes.pem）用户名（CN：kuberntes-master）访问 kubelet API 的权限：
@@ -3684,5 +3692,553 @@ tcp        0      0 10.0.0.61:10250         0.0.0.0:*               LISTEN      
 
 - 10248: healthz http服务端口，即健康检查服务的端口
 - 10250: kubelet服务监听的端口,api会检测他是否存活。即https服务，访问该端口时需要认证和授权（即使访问/healthz也需要）；
-  -> 10255：只读端口，可以不用验证和授权机制，直接访问。这里配置"readOnlyPort: 0"表示未开启只读端口10255；如果配置"readOnlyPort: 10255"则打开10255端口
-  -> 从 K8S v1.10 开始，去除了 --cadvisor-port 参数（默认 4194 端口），不支持访问 cAdvisor UI & API。
+- 10255：只读端口，可以不用验证和授权机制，直接访问。这里配置"readOnlyPort: 0"表示未开启只读端口10255；如果配置"readOnlyPort: 10255"则打开10255端口
+- 从 K8S v1.10 开始，去除了 --cadvisor-port 参数（默认 4194 端口），不支持访问 cAdvisor UI & API。
+
+由于关闭了匿名认证，同时开启了webhook 授权，所有访问10250端口https API的请求都需要被认证和授权。
+预定义的 ClusterRole system:kubelet-api-admin 授予访问 kubelet 所有 API 的权限(kube-apiserver 使用的 kubernetes 证书 User 授予了该权限)：
+
+```bash
+[root@ k8s-m01 work]#  kubectl describe clusterrole system:kubelet-api-admin
+Name:         system:kubelet-api-admin
+Labels:       kubernetes.io/bootstrapping=rbac-defaults
+Annotations:  rbac.authorization.kubernetes.io/autoupdate: true
+PolicyRule:
+  Resources      Non-Resource URLs  Resource Names  Verbs
+  ---------      -----------------  --------------  -----
+  nodes/log      []                 []              [*]
+  nodes/metrics  []                 []              [*]
+  nodes/proxy    []                 []              [*]
+  nodes/spec     []                 []              [*]
+  nodes/stats    []                 []              [*]
+  nodes          []                 []              [get list watch proxy]
+
+```
+
+
+
+ **11、kubelet api 认证和授权** 
+
+kubelet 配置了如下认证参数：
+
+- authentication.anonymous.enabled：设置为 false，不允许匿名�访问 10250 端口；
+- authentication.x509.clientCAFile：指定签名客户端证书的 CA 证书，开启 HTTPs 证书认证；
+- authentication.webhook.enabled=true：开启 HTTPs bearer token 认证；
+
+同时配置了如下授权参数：
+
+- authroization.mode=Webhook：开启 RBAC 授权；
+
+kubelet 收到请求后，使用 clientCAFile 对证书签名进行认证，或者查询 bearer token 是否有效。如果两者都没通过，则拒绝请求，提示 Unauthorized：
+
+```bash
+curl -s --cacert /etc/kubernetes/cert/ca.pem https://10.0.0.61:10250/metrics
+输出：
+Unauthorized
+
+curl -s --cacert /etc/kubernetes/cert/ca.pem -H "Authorization: Bearer 123456" https://10.0.0.61:10250/metrics
+输出：
+Unauthorized
+```
+
+通过认证后，kubelet 使用 SubjectAccessReview API 向 kube-apiserver 发送请求，查询证书或 token 对应的 user、group 是否有操作资源的权限(RBAC)；
+
+下面进行证书认证和授权：
+
+权限不足的证书；
+
+```shell
+curl -s --cacert /etc/kubernetes/cert/ca.pem --cert /etc/kubernetes/cert/kube-controller-manager.pem --key /etc/kubernetes/cert/kube-controller-manager-key.pem https://172.16.60.244:10250/metrics
+输出：
+Forbidden (user=system:kube-controller-manager, verb=get, resource=nodes, subresource=metrics)
+```
+
+ 使用部署 kubectl 命令行工具时创建的、具有最高权限的 admin 证书； 
+
+```bash
+curl -s --cacert /etc/kubernetes/cert/ca.pem --cert /opt/k8s/work/admin.pem --key /opt/k8s/work/admin-key.pem https://10.0.0.61:10250/metrics|head
+```
+
+ 注意：--cacert、--cert、--key 的参数值必须是文件路径，否则返回 401 Unauthorized； 
+
+bear token 认证和授权
+
+创建一个 ServiceAccount，将它和 ClusterRole system:kubelet-api-admin 绑定，从而具有调用 kubelet API 的权限：
+
+```
+kubectl create sa kubelet-api-test
+kubectl create clusterrolebinding kubelet-api-test --clusterrole=system:kubelet-api-admin --serviceaccount=default:kubelet-api-test
+SECRET=$(kubectl get secrets | grep kubelet-api-test | awk '{print $1}')
+TOKEN=$(kubectl describe secret ${SECRET} | grep -E '^token' | awk '{print $2}')
+echo ${TOKEN}
+```
+
+再接着进行kubelet请求：
+
+```bash
+curl -s --cacert /etc/kubernetes/cert/ca.pem -H "Authorization: Bearer ${TOKEN}" https://10.0.0.61:10250/metrics|head
+```
+
+
+
+**12、 cadvisor 和 metrics** 
+
+**cadvisor介绍：**
+
+Google的 cAdvisor 是另一个知名的开源容器监控工具。
+
+只需在宿主机上部署cAdvisor容器，用户就可通过Web界面或REST服务访问当前节点和容器的性能数据(CPU、内存、网络、磁盘、文件系统等等)，非常详细。
+
+默认cAdvisor是将数据缓存在内存中，数据展示能力有限；它也提供不同的持久化存储后端支持，可以将监控数据保存、汇总到Google BigQuery、InfluxDB或者Redis之上。
+
+==新的Kubernetes版本里，cadvior功能已经被集成到了kubelet组件中。==
+
+需要注意的是，cadvisor的web界面，只能看到单前物理机上容器的信息，其他机器是需要访问对应ip的url，数量少时，很有效果，当数量多时，比较麻烦，所以需要把cadvisor的数据进行汇总、展示，需要到“cadvisor+influxdb+grafana”组合。
+
+```
+[root@ k8s-m01 work]# netstat -lntp|grep kubelet
+tcp        0      0 127.0.0.1:34806         0.0.0.0:*               LISTEN      7357/kubelet
+tcp        0      0 10.0.0.61:10248         0.0.0.0:*               LISTEN      7357/kubelet
+tcp        0      0 10.0.0.61:10250         0.0.0.0:*               LISTEN      7357/kubelet
+```
+
+浏览器访问https://10.0.0.61:10250/metrics 和 https://172.16.60.244:10250/metrics/cadvisor 分别返回 kubelet 和 cadvisor 的 metrics。
+
+**注意：**
+
+- kubelet.config.json 设置 authentication.anonymous.enabled 为 false，不允许匿名证书访问 10250 的 https 服务；
+- 参考下面的"浏览器访问kube-apiserver安全端口"，创建和导入相关证书，然后就可以在浏览器里成功访问kube-apiserver和上面的kubelet的10250端口了。
+
+
+
+
+
+
+
+
+
+
+
+### 1.5.9.4 kube-proxy组件
+
+kube-proxy运行在所有worker节点上，它监听apiserver中service和endpoint的变化情况，创建路由规则提供服务IP和负载均衡功能。这里使用ipvs模式的kube-proxy进行部署。
+
+> 在各个节点需要安装ipvsadm和ipset命令，加载ip_vs内核模块
+
+**1、创建kube-proxy证书签名请求**
+
+```bash
+cd /opt/k8s/work
+cat > kube-proxy-csr.json <<EOF
+{
+  "CN": "system:kube-proxy",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "ST": "BeiJing",
+      "L": "BeiJing",
+      "O": "k8s",
+      "OU": "4Paradigm"
+    }
+  ]
+}
+EOF
+```
+
+- CN：指定该证书的 User 为 system:kube-proxy；
+- 预定义的 RoleBinding system:node-proxier 将User system:kube-proxy 与 Role system:node-proxier 绑定，该 Role 授予了调用 kube-apiserver Proxy 相关 API 的权限；
+- 该证书只会被 kube-proxy 当做 client 证书使用，所以 hosts 字段为空；
+
+生成证书和私钥：
+
+```bash
+cd /opt/k8s/work
+cfssl gencert -ca=/opt/k8s/work/ca.pem \
+  -ca-key=/opt/k8s/work/ca-key.pem \
+  -config=/opt/k8s/work/ca-config.json \
+  -profile=kubernetes  kube-proxy-csr.json | cfssljson -bare kube-proxy
+ls kube-proxy*
+```
+
+**2、创建和分发 kubeconfig 文件**
+
+```bash
+cd /opt/k8s/work
+source /opt/k8s/bin/environment.sh
+kubectl config set-cluster kubernetes \
+  --certificate-authority=/opt/k8s/work/ca.pem \
+  --embed-certs=true \
+  --server=${KUBE_APISERVER} \
+  --kubeconfig=kube-proxy.kubeconfig
+kubectl config set-credentials kube-proxy \
+  --client-certificate=kube-proxy.pem \
+  --client-key=kube-proxy-key.pem \
+  --embed-certs=true \
+  --kubeconfig=kube-proxy.kubeconfig
+kubectl config set-context default \
+  --cluster=kubernetes \
+  --user=kube-proxy \
+  --kubeconfig=kube-proxy.kubeconfig
+kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
+```
+
+- –embed-certs=true：将 ca.pem 和 admin.pem 证书内容嵌入到生成的kubectl-proxy.kubeconfig文件中(不加时，写入的是证书文件路径)；
+
+分发 kubeconfig 文件：
+
+```bash
+cd /opt/k8s/work
+source /opt/k8s/bin/environment.sh
+for node_name in ${NODE_NAMES[@]}
+  do
+    echo -e "\033[42;37m >>> ${node_name} <<< \033[0m"
+    scp kube-proxy.kubeconfig root@${node_name}:/etc/kubernetes/
+  done
+```
+
+**3、创建kube-proxy配置文件**
+
+从v1.10开始，kube-proxy部分参数可以配置在文件中，可以使用–write-config-to选项生成该配置文件。
+
+```bash
+cd /opt/k8s/work
+cat > kube-proxy-config.yaml.template <<EOF
+kind: KubeProxyConfiguration
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+clientConnection:
+  burst: 200
+  kubeconfig: "/etc/kubernetes/kube-proxy.kubeconfig"
+  qps: 100
+bindAddress: ##NODE_IP##
+healthzBindAddress: ##NODE_IP##:10256
+metricsBindAddress: ##NODE_IP##:10249
+enableProfiling: true
+clusterCIDR: ${CLUSTER_CIDR}
+hostnameOverride: ##NODE_NAME##
+mode: "ipvs"
+portRange: ""
+kubeProxyIPTablesConfiguration:
+  masqueradeAll: false
+kubeProxyIPVSConfiguration:
+  scheduler: rr
+  excludeCIDRs: []
+EOF
+```
+
+- bindAddress: 监听地址；
+- clientConnection.kubeconfig: 连接 apiserver 的 kubeconfig 文件；
+- -clusterCIDR: kube-proxy 根据 –cluster-cidr判断集群内部和外部流量，指定 –cluster-cidr 或 –masquerade-all 选项后 kube-proxy 才会对访问 Service IP 的请求做 SNAT；
+- hostnameOverride: 参数值必须与 kubelet 的值一致，否则 kube-proxy 启动后会找不到该 Node，从而不会创建任何 ipvs 规则；
+- mode: 使用 ipvs 模式；
+
+分发和创建kube-proxy配置文件：
+
+```bash
+cd /opt/k8s/work
+source /opt/k8s/bin/environment.sh
+for (( i=0; i < 3; i++ ))
+  do 
+    echo -e "\033[42;37m >>> ${NODE_NAMES[i]} <<< \033[0m"
+    sed -e "s/##NODE_NAME##/${NODE_NAMES[i]}/" -e "s/##NODE_IP##/${NODE_IPS[i]}/" kube-proxy-config.yaml.template > kube-proxy-config-${NODE_NAMES[i]}.yaml.template
+    scp kube-proxy-config-${NODE_NAMES[i]}.yaml.template root@${NODE_NAMES[i]}:/etc/kubernetes/kube-proxy-config.yaml
+  done
+```
+
+**4、创建和分发 kube-proxy systemd unit 文件**
+
+```bash
+cd /opt/k8s/work
+source /opt/k8s/bin/environment.sh
+cat > kube-proxy.service <<EOF
+[Unit]
+Description=Kubernetes Kube-Proxy Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=network.target
+[Service]
+WorkingDirectory=${K8S_DIR}/kube-proxy
+ExecStart=/opt/k8s/bin/kube-proxy \\
+  --config=/etc/kubernetes/kube-proxy-config.yaml \\
+  --logtostderr=true \\
+  --v=2
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+分发 kube-proxy systemd unit 文件：
+
+```bash
+cd /opt/k8s/work
+source /opt/k8s/bin/environment.sh
+for node_name in ${NODE_NAMES[@]}
+  do 
+    echo -e "\033[42;37m >>> ${node_name} <<< \033[0m"
+    scp kube-proxy.service root@${node_name}:/etc/systemd/system/
+  done
+```
+
+**5、启动 kube-proxy 服务**
+
+```bash
+cd /opt/k8s/work
+source /opt/k8s/bin/environment.sh
+for node_ip in ${NODE_IPS[@]}
+  do
+    echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
+    ssh root@${node_ip} "mkdir -p ${K8S_DIR}/kube-proxy"
+    ssh root@${node_ip} "modprobe ip_vs_rr"
+    ssh root@${node_ip} "systemctl daemon-reload && systemctl enable kube-proxy && systemctl restart kube-proxy && systemctl status kube-proxy|grep Active"
+  done
+```
+
+==启动报错：==
+
+1、 --random-fully,至少要在 iptables 1.6.2版本才能支持 
+
+```bash
+Not using `--random-fully` in the MASQUERADE rule for iptables because the local version of iptables does not support it 
+```
+
+解决：升级iptables
+
+```bash
+yum install gcc make libnftnl-devel libmnl-devel autoconf automake libtool bison flex  libnetfilter_conntrack-devel libnetfilter_queue-devel libpcap-devel -y
+export LC_ALL=C
+wget wget https://www.netfilter.org/projects/iptables/files/iptables-1.6.2.tar.bz2
+tar -xvf iptables-1.6.2.tar.bz2
+cd iptables-1.6.2
+./autogen.sh
+./configure
+make -j4
+make install
+\cp /usr/local/sbin/iptables* /sbin
+# 也可以把cd /usr/local/sbin下面的iptables相关的东西打包然后分发到其它服务器
+```
+
+重启kube-proxy 与 kubelet
+
+```bash
+cd /opt/k8s/work
+source /opt/k8s/bin/environment.sh
+for node_ip in ${NODE_IPS[@]}
+  do
+    echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
+    ssh root@${node_ip} "systemctl restart kube-proxy && systemctl restart kubelet"
+  done
+  
+source /opt/k8s/bin/environment.sh
+for node_ip in ${NODE_IPS[@]}
+  do
+    echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
+    ssh root@${node_ip} "systemctl status kube-proxy|grep Active && systemctl status kube-proxy|grep Active"
+  done
+```
+
+
+
+**6、检查监听端口** 
+
+```bash
+[root@ k8s-m01 work]# netstat -lnpt|grep kube-prox
+tcp        0      0 10.0.0.61:10249         0.0.0.0:*               LISTEN      113551/kube-proxy
+tcp        0      0 10.0.0.61:10256         0.0.0.0:*               LISTEN      113551/kube-proxy
+```
+
+**7、查看ipvs路由规则**
+
+```bash
+source /opt/k8s/bin/environment.sh
+for node_ip in ${NODE_IPS[@]}
+  do
+    echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
+    ssh root@${node_ip} "/usr/sbin/ipvsadm -ln"
+  done
+```
+
+输出：
+
+```shell
+ >>> 10.0.0.61 <<<
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  10.254.0.1:443 rr
+  -> 10.0.0.61:6443               Masq    1      0          0
+  -> 10.0.0.62:6443               Masq    1      0          0
+  -> 10.0.0.63:6443               Masq    1      0          0
+ >>> 10.0.0.62 <<<
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  10.254.0.1:443 rr
+  -> 10.0.0.61:6443               Masq    1      0          0
+  -> 10.0.0.62:6443               Masq    1      0          0
+  -> 10.0.0.63:6443               Masq    1      0          0
+ >>> 10.0.0.63 <<<
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  10.254.0.1:443 rr
+  -> 10.0.0.61:6443               Masq    1      0          0
+  -> 10.0.0.62:6443               Masq    1      0          0
+  -> 10.0.0.63:6443               Masq    1      0          0
+```
+
+
+
+## 1.5.10  **验证Kubernetes集群功能** 
+
+**1、检查节点状态**
+
+```bash
+[root@ k8s-m01 work]# kubectl get nodes
+NAME      STATUS   ROLES    AGE   VERSION
+k8s-m01   Ready    <none>   83m   v1.17.4
+k8s-m02   Ready    <none>   83m   v1.17.4
+k8s-m03   Ready    <none>   83m   v1.17.4
+```
+
+ 都为 Ready 且版本为v1.17.4 时正常。 
+
+**2、创建测试文件**
+
+```bash
+cd /opt/k8s/work
+cat > nginx-ds.yml <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ds
+  labels:
+    app: nginx-ds
+spec:
+  type: NodePort
+  selector:
+    app: nginx-ds
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nginx-ds
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  selector:
+    matchLabels:
+      app: nginx-ds
+  template:
+    metadata:
+      labels:
+        app: nginx-ds
+    spec:
+      containers:
+      - name: my-nginx
+        image: daocloud.io/library/nginx:latest
+        ports:
+        - containerPort: 80
+EOF
+```
+
+执行测试
+
+```bash
+kubectl create -f nginx-ds.yml
+```
+
+ **3、检查各节点的 Pod IP 连通性**
+
+```bash
+[root@ k8s-m01 work]# kubectl get pods
+NAME             READY   STATUS    RESTARTS   AGE
+nginx-ds-4kjd2   1/1     Running   0          111s
+nginx-ds-p56p4   1/1     Running   0          111s
+nginx-ds-wb7wn   1/1     Running   0          111s
+```
+
+如果状态不是`Running`；可以`kubectl describe pod  nginx-ds-4kjd2`进行查看。
+
+```bash
+[root@ k8s-m01 work]# kubectl get pods -o wide|grep nginx-ds
+nginx-ds-4kjd2   1/1     Running   0          2m36s   172.30.32.2    k8s-m03   <none>           <none>
+nginx-ds-p56p4   1/1     Running   0          2m36s   172.30.224.2   k8s-m01   <none>           <none>
+nginx-ds-wb7wn   1/1     Running   0          2m36s   172.30.72.2    k8s-m02   <none>           <none>
+```
+
+可见，nginx-ds的 Pod IP分别是 172.30.32.2、172.30.224.2、172.30.72.2，在所有 Node 上分别 ping 这三个 IP，看是否连通：
+
+```bash
+cd /opt/k8s/work
+source /opt/k8s/bin/environment.sh
+for node_node_ip in ${NODE_IPS[@]}
+  do
+    echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
+    ssh ${node_node_ip} "ping -c 1 172.30.32.2;ping -c 1 172.30.224.2;ping -c 1 172.30.72.2"
+  done
+```
+
+
+
+**4、 检查服务 IP 和端口可达性** 
+
+```
+[root@ k8s-m01 work]# kubectl get svc
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP   10.254.0.1      <none>        443/TCP        17h
+nginx-ds     NodePort    10.254.219.88   <none>        80:23446/TCP   7m8s
+```
+
+可见nginx-ds的信息：
+
+- Service Cluster IP：10.254.219.88
+- 服务端口：80
+- NodePort 端口：23446
+
+**5、在所有 Node 上 curl Service IP**
+
+```bash
+source /opt/k8s/bin/environment.sh
+for node_ip in ${NODE_IPS[@]}
+  do
+    echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
+    ssh ${node_ip} "curl -s 10.254.219.88"
+  done
+```
+
+预期输出 nginx 欢迎页面内容。
+
+**6、检查服务的 NodePort 可达性**
+
+在所有 Node 上执行：
+
+```bash
+source /opt/k8s/bin/environment.sh
+for node_ip in ${NODE_IPS[@]}
+  do
+    echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m
+    ssh ${node_ip} "curl -s ${node_ip}:23446"
+  done
+```
+
+预期输出 nginx 欢迎页面内容。
+
+
+
+#  1.6 Kubernetes集群插件
+
+
+
+
+
+
+
