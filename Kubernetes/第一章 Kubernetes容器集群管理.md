@@ -88,7 +88,9 @@ master节点上主要运行四个组件：api-server、scheduler、controller-ma
 - Federation提供跨可用区的集群
 - Fluentd-elasticsearch提供集群日志采集、存储与查询
 
+**master与node关系：**
 
+![1584154026341](assets/1584154026341.png)
 
 ## 1.3.3 分层架构
 
@@ -185,7 +187,21 @@ hostnamectl set-hostname k8s-m02
 hostnamectl set-hostname k8s-m03
 ```
 
-**2、添加节点信任关系**
+**2、添加hosts解析**
+
+```shell
+cat >/etc/hosts<<EOF
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+10.0.0.61 k8s-m01
+10.0.0.62 k8s-m02
+10.0.0.63 k8s-m03
+EOF
+```
+
+
+
+**3、添加节点信任关系**
 
 本操作只需要在 k8s-m01 节点上进行，设置 root 账户可以无密码登录**所有节点**：
 
@@ -196,18 +212,7 @@ ssh-copy-id root@k8s-m02
 ssh-copy-id root@k8s-m03
 ```
 
-**3、添加hosts解析**
 
-```shell
-cat >/etc/hosts<<EOF
-127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
-::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
-127.0.0.1  $(hostname)
-10.0.0.61 k8s-m01
-10.0.0.62 k8s-m02
-10.0.0.63 k8s-m03
-EOF
-```
 
 **4、关闭无关的服务**
 
@@ -230,7 +235,7 @@ source /etc/profile
 
  **7、安装依赖包** 
 
-```
+```bash
 yum install -y epel-release
 yum install -y conntrack ntpdate ntp ipvsadm ipset jq iptables curl sysstat libseccomp wget lsof telnet gcc gcc-c++ pcre pcre-devel zlib zlib-devel openssl openssl-devel
 ```
@@ -244,8 +249,6 @@ echo "*/5 * * * * /usr/sbin/ntpdate ntp1.aliyun.com >/dev/null 2>&1" >/var/spool
 **9、加载并优化内核参数**
 
 ```shell
-modprobe ip_vs_rr
-modprobe br_netfilter
 cat >/etc/sysctl.d/kubernetes.conf<<EOF
 net.bridge.bridge-nf-call-iptables=1
 net.bridge.bridge-nf-call-ip6tables=1
@@ -261,6 +264,9 @@ fs.nr_open=52706963
 net.ipv6.conf.all.disable_ipv6=1
 net.netfilter.nf_conntrack_max=2310720
 EOF
+
+modprobe ip_vs_rr
+modprobe br_netfilter
 sysctl -p /etc/sysctl.d/kubernetes.conf
 ```
 
@@ -716,7 +722,7 @@ for node_ip in ${ETCD_IPS[@]}
     echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
     scp etcd-v3.3.19-linux-amd64/etcd* root@${node_ip}:/opt/k8s/bin
     ssh root@${node_ip} "chmod +x /opt/k8s/bin/*"
-  don
+  done
 ```
 
 **4、创建 Etcd 证书和私钥**
@@ -869,9 +875,14 @@ for node_ip in ${MASTER_IPS[@]}
 do
     echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
     ssh root@${node_ip} "mkdir -p ${ETCD_DATA_DIR} ${ETCD_WAL_DIR}"
-    ssh root@${node_ip} "systemctl daemon-reload && systemctl enable etcd && systemctl restart etcd && systemctl status etcd|grep Active"
-    sleep 2
+    ssh root@${node_ip} "systemctl daemon-reload && systemctl enable etcd && systemctl restart etcd && systemctl status etcd|grep Active" &
 done
+```
+
+注意：上面for循环后的`&`符不能少，否则启动报错：
+
+```
+health check for peer 19f3c191758492d6 could not connect: dial tcp 10.0.0.62:2380: connect: connection refused (prober "..._SNAPSHOT")
 ```
 
 如果etcd集群状态不是active (running)，请使用下面命令查看etcd日志
@@ -2395,8 +2406,6 @@ EOF
 - 默认非安全端口10252，安全端口10257；
 - kube-controller-manager 3节点高可用，去竞争锁，成为leader；
 
-
-
 替换启动文件，并分发脚本：
 
 ```shell
@@ -2443,7 +2452,7 @@ journalctl -u kube-controller-manage
 kube-controller-manager 监听 10252 端口，接收 http 请求：
 
 ```shell
-[root@ k8s-m01 work]# netstat -lnpt | grep kube-cont
+[root@ k8s-m01 work]# netstat -lnpt | grep kube-controll
 tcp6       0      0 :::10257                :::*                    LISTEN      16274/kube-controll
 tcp6       0      0 :::10252                :::*                    LISTEN      16274/kube-controll
 ```
@@ -2479,11 +2488,9 @@ for node_ip in ${MASTER_IPS[@]}
   done
 ```
 
-**6、kube-controller-manager 的权限**
+**7、查看kube-controller-manager 的权限**
 
 ClusteRole: system:kube-controller-manager 的权限很小，只能创建 secret、serviceaccount 等资源对象，各 controller 的权限分散到 ClusterRole system:controller:XXX 中。
-
-
 
 ```shell
 [root@ k8s-m01 work]# kubectl describe clusterrole system:kube-controller-manager
@@ -2567,7 +2574,7 @@ PolicyRule:
 
 ```
 
-**测试 kube-controller-manager 集群的高可用**
+**8、测试 kube-controller-manager 集群的高可用**
 
 查看当前的 leader
 
@@ -2891,7 +2898,7 @@ done
 ########
 source /opt/k8s/bin/environment.sh
 for node_ip in ${MASTER_IPS[@]}
-  do
+do
     echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
     ssh root@${node_ip} "curl -s --cacert /etc/kubernetes/cert/ca.pem http://${node_ip}:10251/metrics |head"
 done
@@ -3514,7 +3521,7 @@ manager.go:577] Failed to retrieve checkpoint for "kubelet_internal_checkpoint":
 
 在执行 kubectl exec、run、logs 等命令时，apiserver 会将请求转发到 kubelet 的 https 端口。这里定义 RBAC 规则，授权 apiserver 使用的证书（kubernetes.pem）用户名（CN：kuberntes-master）访问 kubelet API 的权限：
 
-```
+```bash
 kubectl create clusterrolebinding kube-apiserver:kubelet-apis --clusterrole=system:kubelet-api-admin --user kubernetes
 ```
 
@@ -3540,7 +3547,7 @@ Apr  9 22:47:23 k8s-m01 kubelet: E0409 22:47:23.631919  103968 reflector.go:153]
 
 创建一个 clusterrolebinding，将 group system:bootstrappers 和 clusterrole system:node-bootstrapper 绑定：
 
-```
+```shell
 kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bootstrapper --group=system:bootstrappers
 ```
 
@@ -3550,7 +3557,7 @@ kubectl create clusterrolebinding kubelet-bootstrap --clusterrole=system:node-bo
 
 创建三个ClusterRoleBinding，分别用于自动approve client、renew client、renew server证书
 
-```
+```yaml
 cd /opt/k8s/work
 cat > csr-crb.yaml <<EOF
  # Approve all CSRs for the group "system:bootstrappers"
@@ -3613,8 +3620,6 @@ kubectl apply -f csr-crb.yaml
 - node-client-cert-renewal 自动approve node后续过期的client证书，自动生成的证书Group为system:nodes
 - node-server-cert-renewal 自动approve node后续过期的server证书，自动生成的证书Group
 
-
-
 **8、查看 kubelet 情况**
 
 稍等一会，三个节点的 其它CSR 都被自动 approved：
@@ -3650,13 +3655,11 @@ lrwxrwxrwx 1 root root   59 Apr  8 19:09 /etc/kubernetes/cert/kubelet-client-cur
 
 -  没有自动生成 kubelet server 证书； 
 
-
-
 **9、手动 approve server cert csr**
 
 基于[安全性考虑](https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet-tls-bootstrapping/#kubelet-configuration)，CSR approving controllers 不会自动 approve kubelet server 证书签名请求，需要手动 approve：
 
-```
+```bash
 [root@ k8s-m01 work]# kubectl get csr|grep Pending
 csr-7jv57   9m8s    system:node:k8s-m03       Pending
 csr-bwm28   8m58s   system:node:k8s-m02       Pending
@@ -3665,7 +3668,7 @@ csr-fkt48   8m54s   system:node:k8s-m01       Pending
 
 手动 approve
 
-```
+```bash
 kubectl get csr | grep Pending | awk '{print $1}' | xargs kubectl certificate approve
 ```
 
@@ -3683,7 +3686,7 @@ lrwxrwxrwx 1 root root   59 Apr  9 23:11 /etc/kubernetes/cert/kubelet-server-cur
 
  kubelet 启动后监听多个端口，用于接收 kube-apiserver 或其它客户端发送的请求： 
 
-```
+```bash
 [root@ k8s-m01 work]# netstat -lnpt|grep kubelet
 tcp        0      0 127.0.0.1:38868         0.0.0.0:*               LISTEN      109248/kubelet
 tcp        0      0 10.0.0.61:10248         0.0.0.0:*               LISTEN      109248/kubelet
@@ -3693,7 +3696,6 @@ tcp        0      0 10.0.0.61:10250         0.0.0.0:*               LISTEN      
 - 10248: healthz http服务端口，即健康检查服务的端口
 - 10250: kubelet服务监听的端口,api会检测他是否存活。即https服务，访问该端口时需要认证和授权（即使访问/healthz也需要）；
 - 10255：只读端口，可以不用验证和授权机制，直接访问。这里配置"readOnlyPort: 0"表示未开启只读端口10255；如果配置"readOnlyPort: 10255"则打开10255端口
-- 从 K8S v1.10 开始，去除了 --cadvisor-port 参数（默认 4194 端口），不支持访问 cAdvisor UI & API。
 
 由于关闭了匿名认证，同时开启了webhook 授权，所有访问10250端口https API的请求都需要被认证和授权。
 预定义的 ClusterRole system:kubelet-api-admin 授予访问 kubelet 所有 API 的权限(kube-apiserver 使用的 kubernetes 证书 User 授予了该权限)：
@@ -3765,7 +3767,7 @@ bear token 认证和授权
 
 创建一个 ServiceAccount，将它和 ClusterRole system:kubelet-api-admin 绑定，从而具有调用 kubelet API 的权限：
 
-```
+```bash
 kubectl create sa kubelet-api-test
 kubectl create clusterrolebinding kubelet-api-test --clusterrole=system:kubelet-api-admin --serviceaccount=default:kubelet-api-test
 SECRET=$(kubectl get secrets | grep kubelet-api-test | awk '{print $1}')
@@ -3791,7 +3793,7 @@ Google的 cAdvisor 是另一个知名的开源容器监控工具。
 
 默认cAdvisor是将数据缓存在内存中，数据展示能力有限；它也提供不同的持久化存储后端支持，可以将监控数据保存、汇总到Google BigQuery、InfluxDB或者Redis之上。
 
-==新的Kubernetes版本里，cadvior功能已经被集成到了kubelet组件中。==
+==新的Kubernetes版本里，cadvior功能已经被集成到了kubelet组件中。从 K8S v1.10 开始，去除了 --cadvisor-port 参数（默认 4194 端口），不支持访问 cAdvisor UI & API。==
 
 需要注意的是，cadvisor的web界面，只能看到单前物理机上容器的信息，其他机器是需要访问对应ip的url，数量少时，很有效果，当数量多时，比较麻烦，所以需要把cadvisor的数据进行汇总、展示，需要到“cadvisor+influxdb+grafana”组合。
 
@@ -3802,22 +3804,52 @@ tcp        0      0 10.0.0.61:10248         0.0.0.0:*               LISTEN      
 tcp        0      0 10.0.0.61:10250         0.0.0.0:*               LISTEN      7357/kubelet
 ```
 
-浏览器访问https://10.0.0.61:10250/metrics 和 https://172.16.60.244:10250/metrics/cadvisor 分别返回 kubelet 和 cadvisor 的 metrics。
+浏览器访问https://10.0.0.61:10250/metrics 和 https://10.0.0.61:10250/metrics/cadvisor 分别返回 kubelet 和 cadvisor 的 metrics。
 
 **注意：**
 
 - kubelet.config.json 设置 authentication.anonymous.enabled 为 false，不允许匿名证书访问 10250 的 https 服务；
 - 参考下面的"浏览器访问kube-apiserver安全端口"，创建和导入相关证书，然后就可以在浏览器里成功访问kube-apiserver和上面的kubelet的10250端口了。
 
+**浏览器访问kube-apiserver安全端口和kubelet的10250端口：**
+
+ https://10.0.0.61:8443/ 
+
+![1586517320571](assets/1586517320571.png)
+
+****
+
+ https://10.0.0.61:10250/metrics/cadvisor 
+
+![1586517268323](assets/1586517268323.png)
+
+****
+
+因为 kube-apiserver 的 server 证书是我们创建的根证书 ca.pem 签名的，需要将根证书 ca.pem 导入操作系统，并设置永久信任。 
+
+给浏览器生成一个 client 证书，访问 apiserver 的 6443 https 端口时使用。这里使用部署 kubectl 命令行工具时创建的 admin 证书、私钥和上面的 ca 证书，创建一个浏览器可以使用 PKCS#12/PFX 格式的证书: 
+
+```bash
+cd /opt/k8s/work/
+openssl pkcs12 -export -out admin.pfx -inkey admin-key.pem -in admin.pem -certfile ca.pem
+#Enter Export Password:                      # 这里输入自己设定的任意密码，比如"123456"
+#Verifying - Enter Export Password:          # 确认密码: 123456
+# 下载admin.pfx和ca.pem到系统桌面
+```
+
+**谷歌浏览器：**
+
+![1586517427693](assets/1586517427693.png)
+
+![1586517523500](assets/1586517523500.png)
+
+![1586517764157](assets/1586517764157.png)
 
 
 
+注意：浏览器缓存导致页面刷新无变化。
 
-
-
-
-
-
+![1586517682084](assets/1586517682084.png)
 
 ### 1.5.9.4 kube-proxy组件
 
@@ -4038,7 +4070,7 @@ for node_ip in ${NODE_IPS[@]}
   do
     echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
     ssh root@${node_ip} "systemctl status kube-proxy|grep Active && systemctl status kube-proxy|grep Active"
-  done
+    done
 ```
 
 
@@ -4109,7 +4141,7 @@ k8s-m03   Ready    <none>   83m   v1.17.4
 
 **2、创建测试文件**
 
-```bash
+```yaml
 cd /opt/k8s/work
 cat > nginx-ds.yml <<EOF
 apiVersion: v1
@@ -4187,11 +4219,9 @@ for node_node_ip in ${NODE_IPS[@]}
   done
 ```
 
-
-
 **4、 检查服务 IP 和端口可达性** 
 
-```
+```bash
 [root@ k8s-m01 work]# kubectl get svc
 NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
 kubernetes   ClusterIP   10.254.0.1      <none>        443/TCP        17h
@@ -4211,11 +4241,11 @@ source /opt/k8s/bin/environment.sh
 for node_ip in ${NODE_IPS[@]}
   do
     echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
-    ssh ${node_ip} "curl -s 10.254.219.88"
+    ssh ${node_ip} "curl -I 10.254.219.88"
   done
 ```
 
-预期输出 nginx 欢迎页面内容。
+输出 nginx `HTTP/1.1 200 OK`状态码。
 
 **6、检查服务的 NodePort 可达性**
 
@@ -4230,7 +4260,7 @@ for node_ip in ${NODE_IPS[@]}
   done
 ```
 
-预期输出 nginx 欢迎页面内容。
+输出 nginx `HTTP/1.1 200 OK`状态码。
 
 
 

@@ -32,7 +32,7 @@
 
 
 
-# 数据库与脚本技术
+# Mysql数据库与Shell脚本
 
 <table border="0">
     <tr>
@@ -111,7 +111,7 @@
 
 <table border="0">
     <tr>
-        <td><a href="实训三/Mysql高可用之MHA+Atlas.md">Mysql高可用之MHA+Atlas</a></td>
+        <td><a href="实训三/Mysql高可用之MHA+Atlas.md">Mysql高可用之MHA+Atlas读写分离</a></td>
         <td><a href="实训三/Linux运维面试精华.md">Linux运维面试精华</a></td>
     </tr>
 </table>
