@@ -75,16 +75,16 @@
 
 # 实训一
 
-- 基础知识的回顾；
-- Supervisor管理集群；
-- NFS共享存储；
-- Rsync+Crond实现定时备份；
-- NTP时间同步
-- YUM仓库配置
-
 <table border="0">
     <tr>
-        <td><a href="实训一/实训一.md">实训一</a></td>
+        <td><a href="实训一/基础知识的回顾.md">基础知识的回顾</a></td>
+        <td><a href="实训一/Supervisor管理集群.md">Supervisor管理集群</a></td>
+        <td><a href="实训一/NFS共享存储.md">NFS共享存储</a></td> 
+        <td><a href="实训一/YUM仓库配置与使用.md">YUM仓库配置与使用</a></td>
+     <tr>
+     <tr>
+        <td><a href="实训一/Rsync+Crond实现定时备份.md">Rsync+Crond实现定时备份</a></td>
+     <tr>
 </table>
 
 
