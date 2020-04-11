@@ -61,7 +61,7 @@
     </tr>
 	<tr>
         <td><a href="数据库与脚本技术/第十七单元 SSH远程管理/第十七单元 SSH远程管理.md">第十七单元 SSH远程管理</a></td>
-		<td><a href="数据库与脚本技术/第十八单元 Apache自动创建虚拟主机/第十八单元 Apache自动创建虚拟主机.md">第十八单元 Apache自动创建虚拟主机</a></td>
+		<td><a href="数据库与脚本技术/第十八单元 Apache虚拟主机/第十八单元 Apache虚拟主机.md">第十八单元 Apache虚拟主机</a></td>
 		<td><a href="数据库与脚本技术/第十九单元 自动安装Tomcat/第十九单元 自动安装Tomcat.md">第十九单元 自动安装Tomcat</a></td>
 		<td><a href="数据库与脚本技术/第二十单元 IPtables防火墙/第二十单元 IPtables防火墙.md">第二十单元 IPtables防火墙</a></td>
     </tr>
@@ -122,11 +122,20 @@
 
 <table border="0">
     <tr>
-        <td><a href="第一章 Kubernetes容器集群管理.md">第一章 Kubernetes容器集群管理</a></td>
+        <td><a href="Kubernetes/第一章 Kubernetes容器集群管理.md">第一章 Kubernetes容器集群管理</a></td>
     </tr>
 </table>
 
 
+
+<table border="0">
+    <tr>
+    <td><a href="Kubernetes/prometheus+grafana监控部署实践.md">prometheus+grafana监控部署实践</a></td>
+    <td><a href="Kubernetes/prometheus查询语法.md">prometheus查询语法</a></td>
+    <td><a href="Kubernetes/prometheus告警规则.md">prometheus告警规则</a></td>
+    <td><a href="Kubernetes/prometheus浅析.md">prometheus浅析</a></td>
+    </tr>
+</table>
 
 
 
@@ -134,8 +143,8 @@
 
 <table border="0">
     <tr>
-        <td><a href="云架构实战/附录/CentOS6克隆虚机的前提.md">CentOS6克隆虚机的前提</a></td>
+        <td><a href="云架构实战/附录/CentOS6克隆虚机前优化.md">CentOS6克隆虚机前优化</a></td>
 		<td><a href="云架构实战/附录/CentOS7系统安装及克隆前优化.md">CentOS7系统安装及克隆前优化</a></td>
-        <td><a href="云架构实战/附录/配置本地镜像源.md">配置本地镜像源</a></td>
+        <td><a href="云架构实战/附录/本地镜像YUM源.md">本地镜像YUM源</a></td>
     </tr>
 </table>

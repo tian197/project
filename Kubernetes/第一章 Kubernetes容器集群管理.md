@@ -3811,15 +3811,11 @@ tcp        0      0 10.0.0.61:10250         0.0.0.0:*               LISTEN      
 
 **浏览器访问kube-apiserver安全端口和kubelet的10250端口：**
 
- https://10.0.0.61:8443/ 
+https://10.0.0.61:8443/ 
 
-![1586517320571](assets/1586517320571.png)
+https://10.0.0.61:10250/metrics/cadvisor 
 
-****
-
- https://10.0.0.61:10250/metrics/cadvisor 
-
-![1586517268323](assets/1586517268323.png)
+![k8s00](assets/k8s00.gif)
 
 ****
 
@@ -4210,10 +4206,10 @@ nginx-ds-wb7wn   1/1     Running   0          2m36s   172.30.72.2    k8s-m02   <
 ```bash
 cd /opt/k8s/work
 source /opt/k8s/bin/environment.sh
-for node_node_ip in ${NODE_IPS[@]}
+for node_ip in ${NODE_IPS[@]}
   do
     echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
-    ssh ${node_node_ip} "ping -c 1 172.30.32.2;ping -c 1 172.30.224.2;ping -c 1 172.30.72.2"
+    ssh root@${node_ip} "ping -c 1 172.30.32.2;ping -c 1 172.30.224.2;ping -c 1 172.30.72.2"
   done
 ```
 
@@ -4239,7 +4235,7 @@ source /opt/k8s/bin/environment.sh
 for node_ip in ${NODE_IPS[@]}
   do
     echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
-    ssh ${node_ip} "curl -I 10.254.219.88"
+    ssh ${node_ip} "curl -Is 10.254.219.88"
   done
 ```
 
@@ -4252,10 +4248,10 @@ for node_ip in ${NODE_IPS[@]}
 ```bash
 source /opt/k8s/bin/environment.sh
 for node_ip in ${NODE_IPS[@]}
-  do
-    echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m
-    ssh ${node_ip} "curl -s ${node_ip}:23446"
-  done
+do
+   echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
+   ssh ${node_ip} "curl -Is ${node_ip}:23446"
+done
 ```
 
 输出 nginx `HTTP/1.1 200 OK`状态码。
