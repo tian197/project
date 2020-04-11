@@ -12,11 +12,179 @@
 
 
 
+## nginx多策略流量分发
+
+**1、场景描述** 
+
+在实际生产环境中，流量分发有很多情况，下面主要讲讲以下两种流量分发场景：
+
+1. 新版本上线，为了保证新版本稳定性，需要用线上的流量的引入，对新版本进行真实流量测试。如果新版本上线有问题，为降低影响范围，我们对流量的引入应该为从小到大的策略。
+2. 现如今是移动端的时代，而移动端和pc端的设备的不同，需要对移动端和pc的流量进行不同的处理，同时可以针对两种设备的不同需求可以单独升级，可控性强，且架构灵活。
+
+## **2、nginx策略配置**
+
+针对以上两种场景，nginx做为强大的web服务器，通过简单的配置来就可以满足我们的需求，下面我们就开始实战：
+
+```
+nginx version: nginx/1.16.1os version: centos 7
+```
+
+完成以上需求，主要依赖于nginx的两个模块：
+
+1. ngx_http_split_clients_module 文档参考地址: http://nginx.org/en/docs/http/ngx_http_split_clients_module.html
+2. ngx_http_map_module 文档参考地址：http://nginx.org/en/docs/http/ngx_http_map_module.html
+
+**3、流量按比例分配[ngx_http_split_clients_module]**
+
+按比例分配流量，通过ngx_http_split_clients_module模块实现，该模块可通过客户端的某些属性对客户端通过hash算法按比例分配，这些属性包括客户端ip等，通过hash函数，将不同客户端ip进行比例分配，从而可以将部分流量引入新版本服务中，下面看一下具体配置：
+
+```nginx
+user nobody;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+user nobody;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # 根据内置变量变量${remote_addr}进行1:1分发，并将v1和v2的值赋予$version变量
+    split_clients "${remote_addr}AAA" $version {
+                   50%               v1;
+                   *                 v2;
+    }
+    
+    # v1版本服务
+    server {
+          listen 8081;
+          location  / {
+              return 200 "v1\n";
+          }
+    }
+    # v2版本服务
+    server {
+          listen 8082;
+          location  / {
+              return 200 "v2\n";
+          }
+    }
+
+    server {
+        listen 80;
+        location / {
+            proxy_pass http://127.0.0.1/$version;
+        }
+        # v2版本转发
+        location  /v2 {
+            proxy_pass http://127.0.0.1:8082/;
+        }
+        # v1版本转发
+        location  /v1 {
+            proxy_pass http://127.0.0.1:8081/;
+        }
+    }
+}
+```
+
+在配置中，我们利用`split_clients`指令对`$remote_addr`变量进行hash运算，并按1:1比例随机地将`$version`的值赋予v1和v2，*表示剩余的比例，即1-50%，这样就可以通过`$version`的值进行流量分配，具体可看nginx配置，已有注释。可以看到在版本转发时，在`proxy_pass`转发路径最后加了/，是为了把版本路径(v1|v2)去掉，然后再进行转发，可以保持原有的请求uri路径不变，此处算是一个小技巧。
+
+实际效果：
+
+![640](assets/640.gif)
+
+**4、移动端和pc端流量分配[ngx_http_map_module]**
+ngx_http_map_module模块可通过客户端属性按一定规则匹配映射为新的变量，我们可以对客户端的ua进行正则匹配来区分流量，从而进行流量分发，下面是nginx配置文件示例：
+
+```nginx
+user nobody;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
 
 
+    map "${http_user_agent}" $uatype {
+           default           nomobile;
+           "~*mobile"        mobile;
+    }
+    
+    # pc端服务
+    server {
+          listen 8082;
+          location  / {
+              return 200 "nomobile\n";
+          }
+    }
+    
+    # 移动端服务
+    server {
+          listen 8081;
+          location  / {
+              return 200 "mobile\n";
+          }
+    }
 
+    server {
+        listen 80;
+        location / {
+            proxy_pass http://127.0.0.1/$uatype;
+        }
+        # pc端版本转发
+        location  /nomobile {
+            proxy_pass http://127.0.0.1:8082/;
+        }
+        # 移动端版本转发
+        location  /mobile {
+            proxy_pass http://127.0.0.1:8081/;
+        }
+    }
+}
+```
 
+在nginx配置中，我们可以看到使用map指令，对客户端的ua进行正则匹配，一旦匹配成功，$uatype将被分配为mobile，并根据此变量的值进行转发，剩下未匹配的由default 指定，此时$uatype为nomobile，从而转发到pc端服务，同时在转发到后端时，同样在proxy_pass后加/，也是为了去掉nomobile和mobile前缀。在使用map的正则匹配时，代表区分大小写的匹配，*则为不区分大小写。
 
+实际效果：
+
+![641](assets/641.gif)
+
+**5、总结**
+以上只是列举典型的流量分发方式，我们可以根据$http_name或者$arg_name来定制化需求，$http_name获取自定义头部，$arg_name获取自定义uri参数，这就给予我们更多的可能，比如我们可以再用户登录后，添加自定义头部，使用自定义头部，map指令进行流量拆分，更多的用途需要我们自行发挥想象进行探索。
 
 
 
@@ -30,9 +198,7 @@
 
 - <https://github.com/chobits/ngx_http_proxy_connect_module>
 
-
-
-**安装Nginx和模块**
+**1、安装Nginx和模块**
 
 ```
 yum -y install make zlib zlib-devel gcc-c++ libtool  openssl openssl-devel  wget pcre pcre-devel git
@@ -45,7 +211,7 @@ patch -p1 <../ngx_http_proxy_connect_module/patch/proxy_connect_1014.patch
 make && make install
 ```
 
-**虚拟主机配置**
+**2、虚拟主机配置**
 
 ```
 [root@ docker ~]# mkdir -p /usr/local/nginx/conf/conf.d/
@@ -82,7 +248,7 @@ location / {
 }
 ```
 
-**客户端配置** 
+**3、客户端配置** 
 
 **全局的代理设置：** 
 
@@ -109,7 +275,7 @@ http_proxy=hhttp://10.0.0.90:90
 ftp_proxy=http://10.0.0.90:90
 ```
 
-**测试代理**
+**4、测试代理**
 
 **方法一：** 
 

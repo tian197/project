@@ -357,7 +357,7 @@ reboot
 
 **13、设置环境变量脚本**
 
-后续所有的使用环境变量都定义在environment.sh中，需要根据个人机器及网络环境修改。并且需要拷贝到所有节点的/opt/k8s/bin目录下
+后续所有的使用环境变量都定义在 [environment.sh](assets\environment.sh) 中，需要根据个人机器及网络环境修改。并且需要拷贝到所有节点的/opt/k8s/bin目录下
 
 ```shell
 cd /opt/k8s/work/
@@ -1221,8 +1221,6 @@ kube-controller-manager
 cd /opt/k8s/work
 wget https://dl.k8s.io/v1.17.4/kubernetes-server-linux-amd64.tar.gz
 tar -zxvf kubernetes-server-linux-amd64.tar.gz
-cd kubernetes
-tar -xzvf  kubernetes-src.tar.gz
 ```
 
 拷贝二进制文件到所有 master 节点：
@@ -4266,9 +4264,11 @@ for node_ip in ${NODE_IPS[@]}
 
 #  1.6 Kubernetes集群插件
 
+插件是Kubernetes集群的附件组件，丰富和完善了集群的功能，这里分别介绍的插件有coredns、Dashboard、Metrics Server，需要注意的是：kuberntes 自带插件的 manifests.yaml 文件使用 gcr.io 的 docker registry，国内被墙，需要手动替换为其它registry 地址或提前在翻墙服务器上下载，然后再同步到对应的k8s部署机器上。
 
+## 1.6.1 coredns
 
+官网 ：https://coredns.io/ 
 
-
-
+CoreDNS是Golang编写的一个插件式DNS服务器，是Kubernetes 1.13 后所内置的默认DNS服务器；由于其灵活性，它可以在多种环境中使用。 
 
