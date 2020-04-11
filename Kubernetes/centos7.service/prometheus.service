@@ -1,0 +1,21 @@
+[Unit]
+Description=Prometheus
+Documentation=https://prometheus.io/
+After=network.target
+
+[Service]
+# Type设置为notify时，服务会不断重启
+Type=simple
+User=root
+# --storage.tsdb.path是可选项，默认数据目录在运行目录的./dada目录中
+ExecStart=/opt/prometheus/prometheus \
+ --config.file=/opt/prometheus/prometheus.yml \
+ --storage.tsdb.path=/var/lib/prometheus \
+ --storage.tsdb.retention=365d \
+ --web.listen-address=:9090 \
+ --web.external-url=https://prometheus.frognew.com
+ExecReload=/bin/kill  -HUP  $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

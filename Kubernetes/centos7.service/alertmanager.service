@@ -1,0 +1,17 @@
+[Unit]
+Description=Prometheus
+Documentation=https://prometheus.io/
+After=network.target
+
+[Service]
+# Type设置为notify时，服务会不断重启
+Type=simple
+User=root
+ExecStart=/opt/prometheus/alertmanager \
+ --config.file=/opt/prometheus/alertmanager.yml
+
+ExecReload=/bin/kill  -HUP  $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

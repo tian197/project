@@ -1,0 +1,114 @@
+#!/bin/dash
+### BEGIN INIT INFO
+# Provides:          Prometheus
+# Required-Start:    $local_fs $network $named $time $syslog
+# Required-Stop:     $local_fs $network $named $time $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Description:       Prometheus - Monitoring system & time series database
+### END INIT INFO
+#set -x
+WORKING_DIR=/data2/prometheus-data
+DAEMON=/usr/local/bin/prometheus
+NAME=prometheus
+USER=devops
+CONF=/etc/prometheus/prometheus.yml
+PIDFILE=/var/run/prometheus/$NAME.pid
+LOGFILE=/var/log/prometheus/$NAME.log
+
+ARGS="--config.file=$CONF"
+
+do_start_prepare()
+{
+  mkdir -p `dirname $PIDFILE` || true
+  mkdir -p `dirname $LOGFILE` || true
+  chown -R $USER: `dirname $LOGFILE`
+  chown -R $USER: `dirname $PIDFILE`
+  chown -R $USER: $WORKING_DIR
+}
+
+do_start_cmd() {
+  do_start_prepare
+  echo -n "Starting daemon: "$NAME
+  start-stop-daemon --chdir $WORKING_DIR --chuid $USER -C --background --start --quiet --pidfile $PIDFILE --make-pidfile --exec $DAEMON -- $ARGS >> $LOGFILE 2>&1
+  if [ $? -eq 0 ];then
+      echo  "\033[32m [ OK ] \033[0m"
+  else
+      echo  "\033[31m [ FAILED ] \033[0m"
+  fi
+}
+
+do_stop_cmd() {
+  echo -n "Stopping daemon: "$NAME
+  start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE && rm -f $PIDFILE
+  if [ $? -eq 0 ];then
+      echo  "\033[32m [ OK ] \033[0m"
+  else
+      echo  "\033[31m [ FAILED ] \033[0m"
+  fi
+}
+
+do_reload_cmd() {
+  echo -n "Reloading daemon: "$NAME
+  start-stop-daemon --stop --signal HUP --quiet --pidfile $PIDFILE
+  if [ $? -eq 0 ];then
+      echo  "\033[32m [ OK ] \033[0m"
+  else
+      echo  "\033[31m [ FAILED ] \033[0m"
+  fi
+}
+
+#uninstall() {
+#  echo -n "Are you really sure you want to uninstall this service? That cannot be undone. [yes|No] "
+#  local SURE
+#  read SURE
+#  if [ "$SURE" = "yes" ]; then
+#    stop
+#    rm -f "$PIDFILE"
+#    echo "Notice: log file was not removed: '$LOGFILE'" >&2
+#    update-rc.d -f <NAME> remove
+#    rm -fv "$0"
+#  fi
+#}
+
+status() {
+  echo -n "Checking $NAME:				"
+  if [ -f $PIDFILE ]; then
+    PID=$(cat $PIDFILE)
+    if [ -z "$(ps axf | grep ${PID} | grep -v grep)" ]; then
+      echo  "\033[31m [ The process died, but the PIDFILE was still there. ] \033[0m"
+    else
+      echo  "\033[32m Running, the PID is $PID \033[0m"
+    fi
+  else
+    echo  "\033[31m [ Service not running. ] \033[0m"
+  fi
+}
+
+
+case "$1" in
+  start)
+    do_start_cmd
+  ;;
+  stop)
+    do_stop_cmd
+  ;;
+  reload)
+	do_reload_cmd
+  ;;
+  status)
+    status
+  ;;
+  #uninstall)
+  #  uninstall
+  #;;
+  restart)
+    do_stop_cmd
+    do_start_cmd
+  ;;
+  *)
+  echo "Usage: $1 {start|stop|status|reload|restart|uninstall}"
+  exit 1
+esac
+
+exit 0
