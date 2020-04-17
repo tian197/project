@@ -199,8 +199,6 @@ cat >/etc/hosts<<EOF
 EOF
 ```
 
-
-
 **3、添加节点信任关系**
 
 本操作只需要在 k8s-m01 节点上进行，设置 root 账户可以无密码登录**所有节点**：
@@ -209,10 +207,8 @@ EOF
 ssh-keygen -t rsa 
 ssh-copy-id root@k8s-m01
 ssh-copy-id root@k8s-m02
-ssh-copy-id root@k8s-m03
+ssh-copy-id root@k8s-m0
 ```
-
-
 
 **4、关闭无关的服务**
 
@@ -284,8 +280,6 @@ swapoff -a
 sed -ri 's/.*swap.*/#&/' /etc/fstab
 ```
 
-
-
 **11、关闭并禁用firewalld及selinux**
 
  在每台机器上关闭防火墙，清理防火墙规则，设置默认转发策略 
@@ -348,12 +342,10 @@ yum --enablerepo=elrepo-kernel install kernel-lt -y
 
 内核安装好后，需要设置为默认启动选项并重启后才会生效
 
-```
+```bash
 grub2-set-default  0 && grub2-mkconfig -o /etc/grub2.cfg
 reboot
 ```
-
-
 
 **13、设置环境变量脚本**
 
@@ -1221,6 +1213,8 @@ kube-controller-manager
 cd /opt/k8s/work
 wget https://dl.k8s.io/v1.17.4/kubernetes-server-linux-amd64.tar.gz
 tar -zxvf kubernetes-server-linux-amd64.tar.gz
+cd kubernetes
+tar -xzvf  kubernetes-src.tar.gz
 ```
 
 拷贝二进制文件到所有 master 节点：
@@ -4262,9 +4256,289 @@ done
 
 插件是Kubernetes集群的附件组件，丰富和完善了集群的功能，这里分别介绍的插件有coredns、Dashboard、Metrics Server，需要注意的是：kuberntes 自带插件的 manifests.yaml 文件使用 gcr.io 的 docker registry，国内被墙，需要手动替换为其它registry 地址或提前在翻墙服务器上下载，然后再同步到对应的k8s部署机器上。
 
-## 1.6.1 coredns
+## 1.6.1 Coredns
 
 官网 ：https://coredns.io/ 
 
-CoreDNS是Golang编写的一个插件式DNS服务器，是Kubernetes 1.13 后所内置的默认DNS服务器；由于其灵活性，它可以在多种环境中使用。 
+CoreDNS是Golang编写的一个插件式DNS服务器，是Kubernetes 1.13 后所内置的默认DNS服务器；由于其灵活性，它可以在多种环境中使用。
+
+CoreDNS 其实就是一个 DNS 服务，而 DNS 作为一种常见的服务发现手段，所以很多开源项目以及工程师都会使用 CoreDNS 为集群提供服务发现的功能，Kubernetes 就在集群中使用 CoreDNS 解决服务发现的问题。
+
+CoreDNS 的大多数功能都是由插件来实现的，插件和服务本身都使用了 Caddy 提供的一些功能，所以项目本身也不是特别的复杂。
+
+
+
+**1、下载和配置 coredns**
+
+```bash
+cd /opt/k8s/work
+git clone https://github.com/coredns/deployment.git
+mv deployment coredns-deployment
+```
+
+**2、创建 coredns**
+
+```bash
+cd /opt/k8s/work/coredns-deployment/kubernetes
+source /opt/k8s/bin/environment.sh
+./deploy.sh -i ${CLUSTER_DNS_SVC_IP} -d ${CLUSTER_DNS_DOMAIN} | kubectl apply -f -
+```
+
+**3、检查 coredns 功能**
+
+```shell
+$ kubectl get all -n kube-system -l k8s-app=kube-dns
+NAME                           READY   STATUS    RESTARTS   AGE
+pod/coredns-59845f77f8-l7rjh   1/1     Running   0          37h
+
+NAME               TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE
+service/kube-dns   ClusterIP   10.254.0.2   <none>        53/UDP,53/TCP,9153/TCP   37h
+
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/coredns   1/1     1            1           37h
+
+NAME                                 DESIRED   CURRENT   READY   AGE
+replicaset.apps/coredns-59845f77f8   1         1         1       37h
+```
+
+查看创建的coredns的pod状态 ：
+
+```bash
+$ kubectl describe pod/coredns-59845f77f8-l7rjh -n kube-system
+Name:                 coredns-59845f77f8-l7rjh
+Namespace:            kube-system
+Priority:             2000000000
+Priority Class Name:  system-cluster-critical
+Node:                 k8s-m01/10.0.0.61
+Start Time:           Fri, 10 Apr 2020 20:24:29 +0800
+Labels:               k8s-app=kube-dns
+                      pod-template-hash=59845f77f8
+Annotations:          <none>
+Status:               Running
+IP:                   172.30.40.3
+IPs:
+  IP:           172.30.40.3
+Controlled By:  ReplicaSet/coredns-59845f77f8
+```
+
+
+
+**4、新建一个 Deployment**
+
+```yml
+cd /opt/k8s/work
+cat > my-nginx.yaml <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      run: my-nginx
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: daocloud.io/library/nginx:latest
+        ports:
+        - containerPort: 80
+EOF
+kubectl create -f my-nginx.yaml
+```
+
+export 该 Deployment, 生成 my-nginx 服务：
+
+```bash
+$ kubectl expose deploy my-nginx
+$ kubectl get services --all-namespaces |grep my-nginx
+default       my-nginx     ClusterIP   10.254.97.143   <none>        80/TCP                   35s
+```
+
+创建一个dns测试工具Pod，查看 /etc/resolv.conf 是否包含 kubelet 配置的 `--cluster-dns` 和 `--cluster-domain`：
+
+```yml
+cd /opt/k8s/work
+cat > dnsutils-ds.yml <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: dnsutils-ds
+  labels:
+    app: dnsutils-ds
+spec:
+  type: NodePort
+  selector:
+    app: dnsutils-ds
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dnsutils-ds
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  selector:
+    matchLabels:
+      app: dnsutils-ds
+  template:
+    metadata:
+      labels:
+        app: dnsutils-ds
+    spec:
+      containers:
+      - name: my-dnsutils
+        image: tutum/dnsutils:latest
+        command:
+          - sleep
+          - "3600"
+        ports:
+        - containerPort: 80
+EOF
+kubectl create -f dnsutils-ds.yml
+```
+
+查看dnsutils的pod状态：
+
+确保是`Running`；如不是请查看`kubectl describe pod dnsutils-ds-2rlkm`
+
+```bash
+$ kubectl get pods -lapp=dnsutils-ds
+NAME                READY   STATUS              RESTARTS   AGE
+dnsutils-ds-2rlkm   1/1     Running			    0          5m28s
+dnsutils-ds-9hw5m   1/1     Running             0          5m28s
+dnsutils-ds-mlxnr   1/1     Running             0          5m28s
+```
+
+查看pod的`/etc/resolv.conf`
+
+```bash
+$ kubectl -it exec dnsutils-ds-26cpm  cat /etc/resolv.conf
+nameserver 10.254.0.2
+search default.svc.cluster.local svc.cluster.local cluster.local
+options ndots:5
+```
+
+```bash
+$ kubectl -it exec dnsutils-ds-26cpm nslookup kubernetes
+Server:		10.254.0.2
+Address:	10.254.0.2#53
+
+Name:	kubernetes.default.svc.cluster.local
+Address: 10.254.0.1
+```
+
+```bash
+$ kubectl -it exec dnsutils-ds-26cpm nslookup www.baidu.com
+Server:		10.254.0.2
+Address:	10.254.0.2#53
+
+Non-authoritative answer:
+www.baidu.com	canonical name = www.a.shifen.com.
+Name:	www.a.shifen.com
+Address: 61.135.169.121
+Name:	www.a.shifen.com
+Address: 61.135.169.125
+```
+
+ 发现可以将服务 my-nginx 解析到上面它对应的 Cluster IP 10.254.97.143 :
+
+```bash
+$ kubectl -it exec dnsutils-ds-26cpm nslookup my-nginx
+Server:		10.254.0.2
+Address:	10.254.0.2#53
+
+Name:	my-nginx.default.svc.cluster.local
+Address: 10.254.97.143
+```
+
+
+
+
+
+## 1.6.2 Dashboard
+
+Dashboard 是基于网页的 Kubernetes 用户界面。您可以使用 Dashboard 将容器应用部署到 Kubernetes 集群中，也可以对容器应用排错，还能管理集群本身及其附属资源。您可以使用 Dashboard 获取运行在集群中的应用的概览信息，也可以创建或者修改 Kubernetes 资源（如 Deployment，Job，DaemonSet 等等）。例如，您可以对 Deployment 实现弹性伸缩、发起滚动升级、重启 Pod 或者使用向导创建新的应用。
+
+在kubernetes Dashboard中可以查看集群中应用的运行状态，也能够创建和修改各种kubernetes资源（比如Deployment，Job，Daemonset等等），用户可以对Deployment实现弹性伸缩，执行滚动升级，重启pod或者使用向导创建新的应用。
+
+可以说，kubernetes Dashboard提供了kubectl的绝大部分功能。
+
+- 全面的群集管理：命名空间，节点，窗格，副本集，部署，存储，RBAC创建修改等
+- 快速且始终如一的即时更新：无需刷新页面即可查看最新信息
+- 快速查看集群运行状况：实时图表可帮助快速跟踪性能不佳的资源
+- 易于CRUD和扩展：加上内联API文档，可以轻松了解每个字段的作用
+- 简单的OpenID集成：无需特殊代理
+
+Dashboard 同时展示了kubernetes集群中的资源状态信息和所有报错信息。
+
+
+
+官方参考文档：https://kubernetes.io/zh/docs/tasks/access-application-cluster/web-ui-dashboard/
+GitHub项目下载地址：https://github.com/kubernetes/dashboard 
+
+**1、部署Dashboard UI**
+
+```bash
+cd /opt/k8s/work
+wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc7/aio/deploy/recommended.yaml
+mv  recommended.yaml dashboard-recommended.yaml
+```
+
+ [dashboard-recommended.yaml](assets\dashboard-recommended.yaml) 
+
+执行所有定义文件
+
+```bash
+cd /opt/k8s/work
+kubectl apply -f  dashboard-recommended.yaml
+```
+
+查看运行状态
+
+```bash
+$ kubectl get pods -n kubernetes-dashboard
+NAME                                        READY   STATUS    RESTARTS   AGE
+dashboard-metrics-scraper-b68468655-vfnbf   1/1     Running   0          2m31s
+kubernetes-dashboard-64999dbccd-tkvx2       1/1     Running   0          2m32s
+```
+
+查看`kubernetes-dashboard`信息
+
+```bash
+$ kubectl get pod,deployment,svc -n kubernetes-dashboard
+NAME                                            READY   STATUS    RESTARTS   AGE
+pod/dashboard-metrics-scraper-b68468655-vfnbf   1/1     Running   0          9m44s
+pod/kubernetes-dashboard-64999dbccd-tkvx2       1/1     Running   0          9m45s
+
+NAME                                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/dashboard-metrics-scraper   1/1     1            1           9m45s
+deployment.apps/kubernetes-dashboard        1/1     1            1           9m45s
+
+NAME                                TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/dashboard-metrics-scraper   ClusterIP   10.254.124.164   <none>        8000/TCP   9m45s
+service/kubernetes-dashboard        ClusterIP   10.254.119.42    <none>        443/TCP    9m45s
+```
+
+**2、访问 dashboard**
+
+从 1.7 开始，dashboard 只允许通过 https 访问，如果使用 kube proxy 则必须监听 localhost 或 127.0.0.1。对于 NodePort 没有这个限制，但是仅建议在开发环境中使用。对于不满足这些条件的登录访问，在登录成功后浏览器不跳转，始终停在登录界面。
+
+通过 port forward端口转发访问 dashboard：
+
+```bash
+kubectl port-forward -n kubernetes-dashboard  svc/kubernetes-dashboard 4443:443 --address 0.0.0.0
+```
+
+
+
+
 

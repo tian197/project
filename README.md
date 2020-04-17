@@ -152,3 +152,13 @@
         <td><a href="云架构实战/附录/本地镜像YUM源.md">本地镜像YUM源</a></td>
     </tr>
 </table>
+
+
+
+
+
+# 引用
+
+ https://github.com/easzlab/kubeasz
+
+ https://github.com/opsnull/follow-me-install-kubernetes-cluster 

@@ -35,7 +35,7 @@
 
 首先,安装go环境
 
-```
+```bash
 yum -y install epel-release
 
 yum install go -y
@@ -48,7 +48,7 @@ go version go1.11.2 linux/amd64
 
 在prometheus& grafana server节点部署prometheus服务。
 
-```
+```bash
 # promethus不用编译安装，解压目录中有配置文件与启动文件
 [root@ bj01 ~]# 
 mkdir -p /etc/prometheus/
@@ -65,7 +65,7 @@ prometheus --version
 
 ### 2. 配置文件
 
-```
+```yml
 [root@ bj01 prometheus]# cd /etc/prometheus/
 [root@ bj01 prometheus]# cat prometheus.yml
 # my global config
@@ -109,7 +109,7 @@ scrape_configs:
 
 ### 3. 设置用户
 
-```
+```bash
 groupadd prometheus
 useradd -g prometheus -s /sbin/nologin prometheus
 chown -R prometheus:prometheus /usr/local/bin/prometheus
@@ -117,7 +117,7 @@ chown -R prometheus:prometheus /usr/local/bin/prometheus
 
 ### 4. 设置开机启动
 
-```
+```bash
 vim /usr/lib/systemd/system/prometheus.service
 [Unit]
 Description=Prometheus
@@ -138,12 +138,11 @@ WantedBy=multi-user.target
 chown prometheus:prometheus /usr/lib/systemd/system/prometheus.service
 systemctl daemon-reload
 systemctl enable prometheus
-
 ```
 
 ### 5. 设置firewalld
 
-```
+```bash
 firewall-cmd --zone=public --add-port=9090/tcp --permanent 
 firewall-cmd --reload
 firewall-cmd --zone=public --list-ports
@@ -153,7 +152,7 @@ firewall-cmd --zone=public --list-ports
 
 **1) 查看服务转态**
 
-```
+```bash
 systemctl start prometheus
 systemctl status prometheus
 ```
@@ -224,7 +223,7 @@ mv node_exporter-0.17.0.linux-amd64 /usr/local/bin/node_exporter
 
 ### **2.设置用户**
 
-```
+```bash
 groupadd prometheus
 useradd -g prometheus -s /sbin/nologin prometheus
 chown -R prometheus:prometheus /usr/local/bin/node_exporter
@@ -234,7 +233,7 @@ chown -R prometheus:prometheus /usr/local/bin/node_exporter
 
 ### **3.设置开机启动**
 
-```
+```bash
 vim /usr/lib/systemd/system/node_exporter.service
 
 [Unit]
@@ -269,7 +268,7 @@ systemctl start node_exporter.service
 
 ### **1. 下载&安装**
 
-```
+```bash
 Redhat & Centos(ARM64): 
 
 cd /usr/local/src/
@@ -287,7 +286,7 @@ systemctl start grafana-server
 
 ### **3.设置firewalld**
 
-```
+```bash
 firewall-cmd --zone=public --add-port=3000/tcp --permanent 
 firewall-cmd --reload
 firewall-cmd --zone=public --list-ports
@@ -305,13 +304,12 @@ firewall-cmd --zone=public --list-ports
 
 在登陆首页，点击"Add data source"按钮，跳转到添加数据源页面，配置如下：
 
-```
+```bash
 Settings
 Name		Prometheus		Default
 HTTP
 URL			http://localhost:9090
 Access		Server(Default)
-
 ```
 
 
@@ -366,7 +364,7 @@ scrape_configs:
 
 创建node_exporter节点的相关json文件
 
-```
+```bash
 mkdir -p /etc/prometheus/node_conf/
 [root@ bj01 prometheus]# vim /etc/prometheus/node_conf/bj.json
 [
@@ -420,18 +418,20 @@ scrape_configs:
 
 prometheus中与服务发现有关的配置有以下几项（前缀就是支持的系统，sd表示service discovery）：
 
-    azure_sd_config
-    consul_sd_config
-    dns_sd_config
-    ec2_sd_config
-    openstack_sd_config
-    file_sd_config
-    gce_sd_config
-    kubernetes_sd_config
-    marathon_sd_config
-    nerve_sd_config
-    serverset_sd_config
-    triton_sd_config
+```bash
+azure_sd_config
+consul_sd_config
+dns_sd_config
+ec2_sd_config
+openstack_sd_config
+file_sd_config
+gce_sd_config
+kubernetes_sd_config
+marathon_sd_config
+nerve_sd_config
+serverset_sd_config
+triton_sd_config
+```
 服务发现是prometheus最强大的功能之一，这个功能配合relabel_config、*_exporter可以做成很多事情。
 
 **(5).Prometheus配置的热加载**
@@ -440,20 +440,20 @@ Prometheus配置信息的热加载有两种方式：
 
 第一种热加载方式：查看Prometheus的进程id，发送 SIGHUP 信号:
 
-```
+```bash
 kill -HUP <pid>
 ```
 
 
 第二种热加载方式：发送一个POST请求到 /-/reload ，需要在启动时给定 --web.enable-lifecycle 选项：
 
-```
+```bash
 curl -X POST http://localhost:9090/-/reload
 ```
 
 我们使用的是第一种热加载方式，systemd unit文件如下：
 
-```
+```bash
 [root@ bj01 prometheus]# cat /usr/lib/systemd/system/prometheus.service
 [Unit]
 Description=Prometheus
@@ -488,7 +488,7 @@ WantedBy=multi-user.target
 
 这样的标签有：
 
-```
+```bash
 __address__         : 检测目标的地址 
 __scheme__          : http、https等
 __metrics_path__    : 获取指标的路径
@@ -560,7 +560,7 @@ prometheus的查询语句也是很重要的内容，除了用来查询数据，�
 
 查询语句直接就是指标的名称：
 
-```
+```bash
 go_memstats_other_sys_bytes
 ```
 
@@ -572,7 +572,7 @@ go_memstats_other_sys_bytes{instance="192.168.88.10"}
 
 标签属性可以使用4个操作符：
 
-```
+```bash
 =: Select labels that are exactly equal to the provided string.
 !=: Select labels that are not equal to the provided string.
 =~: Select labels that regex-match the provided string (or substring).
@@ -593,7 +593,7 @@ http_requests_total{environment=~"staging|testing|development",method!="GET"}
 
 对查询出来的结果进行运算也是可以的：
 
-```
+```bash
 # 时间范围截取，Range Vector Selectors
 http_requests_total{job="prometheus"}[5m]
  
@@ -612,7 +612,7 @@ sum(http_requests_total{method="GET"} offset 5m)
 
 **发送SIGHUP信号给应用程序的主进程：**
 
-```
+```bash
 kill -1 pid
 ```
 
@@ -620,7 +620,7 @@ kill -1 pid
 
 **发送post请求给指定端点：**
 
-```
+```bash
 curl -XPOST http://ip:9090/-/reload
 对于此种方法要注意在启动时加上以上所说的--web.enable-lifecycle启动参数
 ```
@@ -633,7 +633,7 @@ alertmanager是用来接收prometheus发出的告警，然后按照配置文件�
 
 ### 1.下载部署
 
-```
+```bash
 wget https://github.com/prometheus/alertmanager/releases/download/v0.16.0-alpha.0/alertmanager-0.16.0-alpha.0.linux-amd64.tar.gz
 
 tar -zxvf alertmanager-0.16.0-alpha.0.linux-amd64.tar.gz
@@ -643,13 +643,13 @@ mv alertmanager amtool /usr/local/bin/
 
 ### 2.设置启动用户
 
-```
+```bash
 chown -R prometheus:prometheus /usr/local/bin/prometheus
 ```
 
 ### 3.设置开机自启
 
-```
+```bash
 [root@ bj01 prometheus]# vim /usr/lib/systemd/system/alertmanager.service
 [Unit]
 Description=Prometheus
@@ -679,7 +679,7 @@ systemctl enable prometheus
 
 ### 4.设置防火墙
 
-```
+```bash
 firewall-cmd --zone=public --add-port=9093/tcp --permanent 
 firewall-cmd --reload
 firewall-cmd --zone=public --list-ports
@@ -689,13 +689,13 @@ firewall-cmd --zone=public --list-ports
 
 创建alert_rules存放报警规则
 
-```
+```bash
 mkdir -p /etc/prometheus/alert_rules
 ```
 
 修改prometheus.yml配置
 
-```
+```bash
 [root@ bj01 prometheus]# cat prometheus.yml
 # my global config
 global:
@@ -731,7 +731,7 @@ scrape_configs:
 
 创建报警规则
 
-```
+```bash
 [root@ bj01 prometheus]# cat alert_rules/node_down.yml
 groups:
 - name: example
@@ -751,7 +751,7 @@ groups:
 
 ### 6.启动并验证
 
-```
+```bash
 systemctl start alertmanager
 systemctl status alertmanager
 ```
@@ -762,7 +762,7 @@ systemctl status alertmanager
 
 ### 7.查看启动参数
 
-```
+```bash
 devops@mgt-prod-prometheus:/etc/prometheus$ alertmanager -h
 usage: alertmanager [<flags>]
 
@@ -792,13 +792,13 @@ Flags:
 
 **rules规则语法检查**
 
-```
+```bash
 promtool check rules /path/to/example.rules.yml
 ```
 
 **promethues配置语法检查**
 
-```
+```bash
 promtool check config prometheus.yml
 ```
 
@@ -813,7 +813,7 @@ step 2: 访问[apps](https://work.weixin.qq.com/wework_admin/loginpage_wx#apps) 
 
 #### alertmanager.yml配置
 
-```
+```yml
 [root@ bj01 prometheus]# cat alertmanager.yml
 global:
   resolve_timeout: 5m
@@ -847,14 +847,13 @@ receivers:
 #    target_match:
 #      severity: 'warning'
 #    equal: ['alertname', 'dev', 'instance']
-
 ```
 
 
 
 #### prometheus.yml配置
 
-```
+```yml
 [root@ bj01 prometheus]# cat prometheus.yml
 # my global config
 global:
@@ -885,7 +884,7 @@ scrape_configs:
 
 #### node_down.yml配置
 
-```
+```yml
 [root@ bj01 prometheus]# cat rules/node_down.yml
 groups:
 - name: node_down
@@ -904,7 +903,7 @@ groups:
 
 #### wechat.tmpl配置
 
-```
+```yml
 [root@ bj01 prometheus]# cat template/wechat.tmpl
 {{ define "wechat.html" }}
   {{ range .Alerts.Firing }}
@@ -938,7 +937,7 @@ groups:
 
 prometheus服务端通过配置文件可以设置告警，下面是一个告警设置的配置文件alert.yml：
 
-```
+```bash
 groups:
 
 - name: goroutines_monitoring
@@ -967,7 +966,7 @@ groups:
 
 在prometheus的告警配置文件中配置了2条告警规则，prometheus会产生2条告警，通过设置AlterManager的告警抑制规则，让同一指标只产生一条告警。对应上面的抑制规则设置：
 
-```
+```bash
 inhibit_rules:
   - source_match:
     altername: 'TooMuchGoroutines'
