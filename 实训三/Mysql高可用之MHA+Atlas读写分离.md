@@ -6,7 +6,7 @@
 
 
 
-# Mysql高可用--MHA
+# Mysql高可用之MHA+Atlas读写分离
 
 
 
@@ -115,7 +115,7 @@ sed -i  '/^SELINUX/s#enforcing#disabled#g' /etc/selinux/config
 
 **互相配置ssh免密码登录**
 
-注意：是互相，并且最好不要禁掉密码登录，如果禁了，可能会有问题
+注意：是互相，并且最好不要禁掉密码登录，如果禁了，可能会有问题。
 
 ```shell
 yum -y install sshpass
@@ -268,9 +268,9 @@ master_log_pos=527;
 mysql> start slave;
 ```
 
-常见报错：
+报错1：
 
-```
+```bash
 ERROR 1872 (HY000): Slave failed to initialize relay log info structure from the repository
 
 报错原因：
@@ -289,9 +289,9 @@ mysql> reset slave
 mysql> show slave status\G
 ```
 
-常见报错：
+报错2：
 
-```
+```bash
 mysql> show slave status\G；
 ERROR：
 No query specified
@@ -332,14 +332,14 @@ mysql> flush privileges;
 
 关闭从服务器的复制功能
 
-```
+```bash
 mysql -uroot -p123456
 mysql> stop slave;
 ```
 
 配置从服务器指向master
 
-```
+```bash
 change master to master_host='10.0.0.41',
 master_user='rep',
 master_password='123456',
@@ -349,13 +349,13 @@ master_log_pos=530;
 
 开启从服务器的复制功能
 
-```
+```bash
 mysql> start slave;
 ```
 
 检查从服务器的复制功能状态
 
-```
+```bash
 #检查画横线的两行是否变为yes
 mysql> show slave status\G
 ```

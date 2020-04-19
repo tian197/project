@@ -4481,6 +4481,153 @@ kubectl config use-context default --kubeconfig=dashboard.kubeconfig
 
 ![1587264562518](assets/1587264562518.png)
 
+这里由于缺少Heapster或metrics-server插件，当前dashboard还不能展示 Pod、Nodes 的 CPU、内存等统计数据和图表。
+
+
+
+## 1.10.3 Metrics-server
+
+Metrics Server是Kubernetes内置自动伸缩管道的可扩展，高效的容器资源指标来源。
+
+Metrics Server从Kubelet收集资源指标，并通过[Metrics API](https://github.com/kubernetes/metrics)在Kubernetes apiserver中公开它们， 以供[Horizontal Pod Autoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)和[Vertical Pod Autoscaler使用](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler)。也可以通过访问Metrics API `kubectl top`，从而更轻松地调试自动缩放管道。
+
+Metrics Server并非用于非自动缩放目的。例如，请勿将其用于将指标转发到监视解决方案，也不要将其用作监视解决方案指标的来源。
+
+Metrics Server提供：
+
+- 适用于大多数集群的单个部署（请参阅[需求](https://github.com/kubernetes-sigs/metrics-server#requirements)）
+- 可扩展支持多达5,000个节点集群
+- 资源效率：Metrics Server使用0.5m核心CPU和每个节点4 MB内存
+
+metrics-server 通过 kube-apiserver 发现所有节点，然后调用 kubelet APIs（通过 https 接口）获得各节点（Node）和 Pod 的 CPU、Memory 等资源使用情况。从 Kubernetes 1.12 开始，kubernetes 的安装脚本移除了 Heapster，从 1.13 开始完全移除了对 Heapster 的支持，Heapster 不再被维护。替代方案如下：
+
+- 用于支持自动扩缩容的 CPU/memory HPA metrics：metrics-server；
+- 通用的监控方案：使用第三方可以获取 Prometheus 格式监控指标的监控系统，如 Prometheus Operator；
+- 事件传输：使用第三方工具来传输、归档 kubernetes events；
+
+从 Kubernetes 1.8 开始，资源使用指标（如容器 CPU 和内存使用率）通过 Metrics API 在 Kubernetes 中获取, metrics-server 替代了heapster。Metrics Server 实现了Resource Metrics API，Metrics Server 是集群范围资源使用数据的聚合器。 Metrics Server 从每个节点上的 Kubelet 公开的 Summary API 中采集指标信息。
+
+有了Metrics Server组件，也采集到了该有的数据，也暴露了api，但因为api要统一，如何将请求到api-server的/apis/metrics请求转发给Metrics Server呢，解决方案就是：kube-aggregator,在k8s的1.7中已经完成，之前Metrics Server一直没有面世，就是耽误在了kube-aggregator这一步。kube-aggregator（聚合api）主要提供：
+
+- Provide an API for registering API servers;
+- Summarize discovery information from all the servers;
+- Proxy client requests to individual servers;
+
+**Metric API的使用：**
+
+- Metrics API 只可以查询当前的度量数据，并不保存历史数据;
+- Metrics API URI 为 /apis/metrics.k8s.io/，在 k8s.io/metrics 维护;
+- 必须部署 metrics-server 才能使用该 API，metrics-server 通过调用 Kubelet Summary API 获取数据
+
+Metrics server定时从Kubelet的Summary API(类似/ap1/v1/nodes/nodename/stats/summary)采集指标信息，这些聚合过的数据将存储在内存中，且以metric-api的形式暴露出去。Metrics server复用了api-server的库来实现自己的功能，比如鉴权、版本等，为了实现将数据存放在内存中吗，去掉了默认的etcd存储，引入了内存存储（即实现Storage interface)。因为存放在内存中，因此监控数据是没有持久化的，可以通过第三方存储来拓展，这个和heapster是一致的。
+
+Kubernetes Dashboard 还不支持 metrics-server，如果使用 metrics-server 替代 Heapster，将无法在 dashboard 中以图形展示 Pod 的内存和 CPU 情况，需要通过 Prometheus、Grafana 等监控方案来弥补。kuberntes 自带插件的 manifests yaml 文件使用 gcr.io 的 docker registry，国内被墙，需要手动替换为其它 registry 地址（本文档未替换）；可以从微软中国提供的 gcr.io 免费代理下载被墙的镜像。
+
+**监控架构：**
+
+<img src="assets/907596-20190628004115280-294236121.png" style="zoom: 50%;" />
+
+Metrics server出现后，新的Kubernetes 监控架构将变成上图的样子
+
+核心流程（黑色部分）：这是 Kubernetes正常工作所需要的核心度量，从 Kubelet、cAdvisor 等获取度量数据，再由metrics-server提供给 Dashboard、HPA 控制器等使用。
+
+监控流程（蓝色部分）：基于核心度量构建的监控流程，比如 Prometheus 可以从 metrics-server 获取核心度量，从其他数据源（如 Node Exporter 等）获取非核心度量，再基于它们构建监控告警系统。
+
+官方地址：https://github.com/kubernetes-incubator/metrics-server
+
+==**metric-server使用：**==
+
+如上文提到的，metric-server是扩展的apiserver，依赖于kube-aggregator，因此需要在apiserver中开启相关参数。
+
+```ruby
+--requestheader-allowed-names="aggregator"
+--requestheader-client-ca-file=/etc/kubernetes/cert/ca.pem
+--requestheader-extra-headers-prefix="X-Remote-Extra-"
+--requestheader-group-headers=X-Remote-Group
+--requestheader-username-headers=X-Remote-User
+--proxy-client-cert-file=/etc/kubernetes/cert/proxy-client.pem
+--proxy-client-key-file=/etc/kubernetes/cert/proxy-client-key.pem
+```
+
+**1、安装 metrics-server**
+
+==详细请看 [metrics-server-deployment.yaml](assets\metrics-server-deployment.yaml)== 
+
+```yml
+cd /opt/k8s/work/
+# git clone https://github.com/kubernetes-sigs/metrics-server.git
+#此处用的是v0.3.6
+tar -zxvf metrics-server-v0.3.6.tar.gz
+cd metrics-server-0.3.6/deploy/1.8+/
+cp metrics-server-deployment.yaml{,.bak}
+vim metrics-server-deployment.yaml
+......
+spec:
+      hostNetwork: true #新增
+      serviceAccountName: metrics-server
+      volumes:
+      - name: tmp-dir
+        emptyDir: {}
+      containers:
+      - name: metrics-server
+        image: registry.cn-hangzhou.aliyuncs.com/google_containers/metrics-server-amd64:v0.3.6 #修改国内镜像源
+        command:	#新增
+        - /metrics-server #新增
+        - --metric-resolution=30s #新增
+        - --kubelet-insecure-tls #新增
+        - --kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP #新增
+        imagePullPolicy: Always  #修改
+......
+kubectl create -f .
+```
+
+**2、 查看运行情况** 
+
+```bash
+[root@ k8s-m01 1.8+]# kubectl -n kube-system get pods -l k8s-app=metrics-server
+NAME                              READY   STATUS    RESTARTS   AGE
+metrics-server-7c4c487b76-fn8jv   1/1     Running   0          51s
+[root@ k8s-m01 1.8+]# kubectl get svc -n kube-system  metrics-server
+NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+metrics-server   ClusterIP   10.254.91.183   <none>        443/TCP   61s
+```
+
+**3、 查看 metrics-server 输出的 metrics** 
+
+ 通过 kube-apiserver 或 kubectl proxy 访问： 
+
+```bash
+https://10.0.0.61:8443/apis/metrics.k8s.io/v1beta1/nodes
+https://10.0.0.61:8443/apis/metrics.k8s.io/v1beta1/pods
+```
+
+直接使用 kubectl 命令访问 ：
+
+```bash
+kubectl get --raw https://10.0.0.61:6443/apis/metrics.k8s.io/v1beta1/nodes | jq .
+kubectl get --raw https://10.0.0.61:6443/apis/metrics.k8s.io/v1beta1/pods | jq .
+kubectl get --raw https://10.0.0.61:6443/apis/metrics.k8s.io/v1beta1/nodes/<node-name> | jq .
+kubectl get --raw https://10.0.0.61:6443/apis/metrics.k8s.io/v1beta1/namespace/<namespace-name>/pods/<pod-name> | jq .
+```
+
+**4、使用 kubectl top 命令查看集群节点资源使用情况**
+
+```bash
+[root@ k8s-m01 1.8+]# kubectl top pods -n kube-system
+NAME                              CPU(cores)   MEMORY(bytes)
+coredns-59845f77f8-l7rjh          4m           16Mi
+metrics-server-7c4c487b76-fn8jv   3m           14Mi
+[root@ k8s-m01 1.8+]# kubectl top nodes
+NAME      CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%
+k8s-m01   160m         8%     2485Mi          64%
+k8s-m02   181m         9%     1984Mi          51%
+k8s-m03   161m         8%     1931Mi          50%
+```
+
+此时，k8s的Dashboard也可以看到pod使用资源情况。
+
+![1587300799452](assets/1587300799452.png)
+
 
 
 ## 1.10.3 Kube-prometheus
