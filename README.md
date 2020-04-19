@@ -163,8 +163,3 @@
     </tr>
 </table>
 
-
-
- https://github.com/easzlab/kubeasz
-
- https://github.com/opsnull/follow-me-install-kubernetes-cluster 
