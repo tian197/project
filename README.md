@@ -122,11 +122,21 @@
 
 
 
-# Kubernetes指南
+# Kubernetes 权威指南
 
 <table border="0">
     <tr>
-        <td><a href="Kubernetes/第一章 Kubernetes容器集群管理.md">第一章 Kubernetes容器集群管理</a></td>
+        <td><a href="Kubernetes/第一章 Kubernetes入门及实践.md">第一章 Kubernetes入门及实践</a></td>
+    </tr>
+</table>
+
+
+
+# K8S 高可用
+
+<table border="0">
+    <tr>
+        <td><a href="Kubernetes/01-Kubernets高可用集群.md">01-Kubernets 高可用集群</a></td>
     </tr>
 </table>
 
@@ -154,10 +164,6 @@
 </table>
 
 
-
-
-
-# 引用
 
  https://github.com/easzlab/kubeasz
 
