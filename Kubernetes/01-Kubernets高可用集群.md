@@ -75,7 +75,7 @@ EOF
 ssh-keygen -t rsa 
 ssh-copy-id root@k8s-m01
 ssh-copy-id root@k8s-m02
-ssh-copy-id root@k8s-m0
+ssh-copy-id root@k8s-m03
 ```
 
 **4、关闭无关的服务**
