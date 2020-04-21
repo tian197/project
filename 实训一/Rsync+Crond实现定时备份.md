@@ -2,7 +2,7 @@
 
 # Rsync+Crond实现定时备份
 
-### **rsync介绍**
+# **rsync介绍**
 
 `rsync`英文称为`remote synchronizetion`，从软件的名称就可以看出来，rsync具有可使**本地和远程**两台主机之间的数据快速复制同步镜像、远程备份的功能，这个功能类似于ssh带的scp命令，但是又优于scp命令的功能，**scp每次都是全量拷贝，而rsync可以增量拷贝。**当然，rsync还可以在本地主机的不同分区或目录之间全量及增量的复制数据，这又类似cp命令。但是同样也优于cp命令，cp每次都是全量拷贝，而rsync可以增量拷贝。
 
@@ -18,7 +18,7 @@ client/server ：客户端/服务端
 
 
 
-### rsync优缺点
+# rsync优缺点
 
 **优点：**
 1）可以**增量备份**，支持socket（daemon），集中备份(**支持推拉，都是以客户端为参照物**)；socket（daemon）需要加密传输，可以利用vpn服务或ipsec服务。
@@ -45,7 +45,7 @@ client/server ：客户端/服务端
 
 
 
-## rsync的应用场景
+# rsync的应用场景
 
 **应用场景1：推**
 
@@ -77,7 +77,7 @@ client/server ：客户端/服务端
 
 
 
-### rsync三种工作模式
+# rsync三种工作模式
 
 Rsync有三种传输模式，分别是本地方式、远程方式、守护进程。
 
@@ -105,7 +105,7 @@ rsync [OPTION...] SRC... [USER@]HOST:DEST
 
 
 
-**守护进程模式： 以守护进程（socket）的方式传输数据（rsync  本身的功能）。**最常用
+**守护进程模式： 以守护进程(socket)的方式传输数据(rsync  本身的功能).**最常用
 
 Pull: 拉取
 
@@ -125,18 +125,19 @@ rsync [OPTION...] SRC... rsync://[USER@]HOST[:PORT]/DEST
 
 
 
-### rsync守护进程模式部署
+## rsync守护进程模式部署
 
-环境介绍：
+## 环境介绍
 
-```
-centos7
+| 主机名 | 角色   | IP        | 系统      |
+| ------ | ------ | --------- | --------- |
+| c7-41  | 服务端 | 10.0.0.41 | CentOS7.7 |
+| c7-42  | 客户端 | 10.0.0.42 | CentOS7.7 |
 
-10.0.0.41		rsync服务端
-10.0.0.42		rsync客户端
-```
 
-**服务端部署**
+
+## 服务端部署
+
 1、确认rsync软件服务是否存在			
 
 ```shell
@@ -189,6 +190,7 @@ rpm -qa rsync
 2、手动配置rsync软件配置文件			
 
 ```shell
+[root@ c7-41 ~]#
 vim  /etc/rsyncd.conf
 
 ##全局配置			
@@ -213,9 +215,12 @@ auth users = rsync_backup    #不存在的用户；只用于认证
 secrets file = /etc/rsync.password  #设置进行连接认证的密匙文件
 ```
 
+注意：配置文件中，行后不要有注释和空格。
+
 3、创建rsync备份目录/授权rsync用户管理备份目录；修改备份目录权限			 							
 
 ```shell
+[root@ c7-41 ~]#
 mkdir -p /data
 useradd rsync -s /sbin/nologin -M
 chown -R rsync.rsync /data/
@@ -224,6 +229,7 @@ chown -R rsync.rsync /data/
 4、创建认证用户密码文件；修改文件权限							
 
 ```shell
+[root@ c7-41 ~]#
 echo "rsync_backup:123456" >/etc/rsync.password
 chmod 600 /etc/rsync.password
 ```
@@ -231,32 +237,47 @@ chmod 600 /etc/rsync.password
 5、重启rsync守护进程服务			
 
 ```shell
+[root@ c7-41 ~]#
 systemctl restart rsyncd.service
 systemctl enable rsyncd.service
+
+#启动文件
+[root@ c7-41 ~]# vim /usr/lib/systemd/system/rsyncd.service
+[Unit]
+Description=fast remote file copy program daemon
+  nditionPathExists=/etc/rsyncd.conf
+
+[Service]
+EnvironmentFile=/etc/sysconfig/rsyncd
+ExecStart=/usr/bin/rsync --daemon --no-detach "$OPTIONS"
+
+[Install]
+WantedBy=multi-user.target
 ```
 
 
 
-### 客户端部署
+## 客户端部署
 
 创建密码文件，客户端密码文件中，只需要密码即可。同时，密码文件的权限是600			
 
 ```shell
+[root@ c7-42 ~]#
 echo "123456">/etc/rsync.password
 chmod 600 /etc/rsync.password
 ```
 
-### 客户端测试推送文件
+## 客户端推送文件
 
 ```shell
-rsync -avz aaa.txt rsync_backup@10.0.0.41::backup --password-file=/etc/rsync.password
+[root@ c7-42 ~]# rsync -avz aaa.txt rsync_backup@10.0.0.41::backup --password-file=/etc/rsync.password
 ```
 
 注意：rsync默认使用873端口，防火墙开启时，需放行端口
 
-### **客户端拉取文件**
+## **客户端拉取文件**
 
 ```shell
-rsync -avz rsync_backup@10.0.0.41::backup --password-file=/etc/rsync.password /tmp
+[root@ c7-42 ~]# rsync -avz rsync_backup@10.0.0.41::backup --password-file=/etc/rsync.password /tmp
 ```
 
