@@ -79,7 +79,6 @@ createrepo --update /yum/centos7/
 
 ```shell
 mv /etc/yum.repos.d/epel.repo /etc/yum.repos.d/epel.repo.ori
-
 cat >/etc/yum.repos.d/centos7.repo<<EOF
 [centos7]
 name=Server
