@@ -101,12 +101,77 @@ yum --enablerepo=centos7 --disablerepo=base,extras,updates,epel list
 sed -i -e '19a enabled=0' -e '29a enabled=0' -e '39a enabled=0' /etc/yum.repos.d/CentOS-Base.repo
 ```
 
-**测试下载**
+### 测试下载
+
+注释`/etc/resolv.conf`
+
+```bash
+[root@ c7-42 yum.repos.d]# cat /etc/resolv.conf
+#nameserver 223.5.5.5
+#nameserver 223.6.6.6
+
+[root@ c7-42 yum.repos.d]# ping qq.com
+ping: qq.com: Name or service not known
+```
+
+服务端安装nginx或者找nginx相关rpm
+
+```
+[root@ c7-41 centos7]# yum -y install nginx
+```
+
+找到nginx所有的相关rpm
+
+```bash
+[root@ c7-41 7]# cd /var/cache/yum/x86_64/7/
+[root@ c7-41 7]# find . -name '*.rpm'
+./base/packages/createrepo-0.9.9-28.el7.noarch.rpm
+./base/packages/deltarpm-3.6-3.el7.x86_64.rpm
+./base/packages/python-chardet-2.2.1-3.el7.noarch.rpm
+./base/packages/yum-utils-1.1.31-52.el7.noarch.rpm
+./base/packages/python-deltarpm-3.6-3.el7.x86_64.rpm
+./base/packages/python-kitchen-1.1.1-5.el7.noarch.rpm
+./base/packages/centos-indexhtml-7-9.el7.centos.noarch.rpm
+./base/packages/dejavu-fonts-common-2.33-6.el7.noarch.rpm
+./base/packages/dejavu-sans-fonts-2.33-6.el7.noarch.rpm
+./base/packages/fontconfig-2.13.0-4.3.el7.x86_64.rpm
+./base/packages/fontpackages-filesystem-1.44-8.el7.noarch.rpm
+./base/packages/gd-2.0.35-26.el7.x86_64.rpm
+./base/packages/gperftools-libs-2.6.1-1.el7.x86_64.rpm
+./base/packages/libX11-1.6.7-2.el7.x86_64.rpm
+./base/packages/libX11-common-1.6.7-2.el7.noarch.rpm
+./base/packages/libXau-1.0.8-2.1.el7.x86_64.rpm
+./base/packages/libXpm-3.5.12-1.el7.x86_64.rpm
+./base/packages/libxcb-1.13-1.el7.x86_64.rpm
+./epel/packages/nginx-1.16.1-1.el7.x86_64.rpm
+./epel/packages/nginx-all-modules-1.16.1-1.el7.noarch.rpm
+./epel/packages/nginx-filesystem-1.16.1-1.el7.noarch.rpm
+./epel/packages/nginx-mod-http-image-filter-1.16.1-1.el7.x86_64.rpm
+./epel/packages/nginx-mod-http-perl-1.16.1-1.el7.x86_64.rpm
+./epel/packages/nginx-mod-http-xslt-filter-1.16.1-1.el7.x86_64.rpm
+./epel/packages/nginx-mod-mail-1.16.1-1.el7.x86_64.rpm
+./epel/packages/nginx-mod-stream-1.16.1-1.el7.x86_64.rpm
+```
+
+然后，添加到自己的yum仓库
+
+```bash
+[root@ c7-41 7]# find . -name '*.rpm'|xargs -i cp {} /yum/centos7
+```
+
+更新自己的yum仓库
+
+```bash
+[root@ c7-41 centos7]# cd /yum/centos7/
+[root@ c7-41 centos7]# createrepo --update /yum/centos7/
+```
+
+客户端重新加载yum缓存并下载nginx
 
 ```shell
 yum clean all
 yum makecache
-yum -y install vsftpd
+yum -y install nginx
 ```
 
 
