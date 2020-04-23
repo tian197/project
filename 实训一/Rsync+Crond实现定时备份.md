@@ -105,7 +105,7 @@ rsync [OPTION...] SRC... [USER@]HOST:DEST
 
 
 
-**守护进程模式： 以守护进程(socket)的方式传输数据(rsync  本身的功能).**最常用
+**守护进程模式： 以守护进程socket的方式传输数据**最常用
 
 Pull: 拉取
 
@@ -121,7 +121,7 @@ rsync [OPTION...] SRC... [USER@]HOST::DEST
 rsync [OPTION...] SRC... rsync://[USER@]HOST[:PORT]/DEST
 ```
 
-注意：推拉操作都是通过rsync clent操作的。
+注意：推拉操作都是通过rsync client客户端操作的。
 
 
 
@@ -242,7 +242,7 @@ systemctl restart rsyncd.service
 systemctl enable rsyncd.service
 
 #启动文件
-[root@ c7-41 ~]# vim /usr/lib/systemd/system/rsyncd.service
+[root@ c7-41 ~]# cat /usr/lib/systemd/system/rsyncd.service
 [Unit]
 Description=fast remote file copy program daemon
   nditionPathExists=/etc/rsyncd.conf
@@ -273,7 +273,7 @@ chmod 600 /etc/rsync.password
 [root@ c7-42 ~]# rsync -avz aaa.txt rsync_backup@10.0.0.41::backup --password-file=/etc/rsync.password
 ```
 
-注意：rsync默认使用873端口，防火墙开启时，需放行端口
+注意：rsync默认使用873端口，防火墙开启时，需放行端口。
 
 ## **客户端拉取文件**
 
