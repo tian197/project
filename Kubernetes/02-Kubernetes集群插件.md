@@ -385,13 +385,15 @@ https://github.com/coreos/kube-prometheus
 
 kube-prometheus 是一整套监控解决方案，它使用 Prometheus 采集集群指标，Grafana 做展示，包含如下组件：
 
-- The Prometheus Operator
-- Highly available Prometheus
-- Highly available Alertmanager
-- Prometheus node-exporter
-- ==Prometheus Adapter for Kubernetes Metrics APIs （k8s-prometheus-adapter）==
-- ==kube-state-metrics==
-- Grafana
+| 组件                                                         | 功能描述                                                     |
+| :----------------------------------------------------------- | :----------------------------------------------------------- |
+| The Prometheus Operator                                      | 可以非常简单的在kubernetes集群中部署Prometheus服务，并且提供对kubernetes集群的监控，并且可以配置和管理prometheus |
+| Highly available Prometheus                                  | 高可用监控工具                                               |
+| Highly available Alertmanager                                | 高可用告警工具，用于接收 Prometheus 发送的告警信息，它支持丰富的告警通知渠道，而且很容易做到告警信息进行去重，降噪，分组等，是一款前卫的告警通知系统。 |
+| node-exporter                                                | 用于采集服务器层面的运行指标，包括机器的loadavg、filesystem、meminfo等基础监控，类似于传统主机监控维度的zabbix-agent |
+| ==Prometheus Adapter for Kubernetes Metrics APIs （k8s-prometheus-adapter）== | 轮询Kubernetes API，并将Kubernetes的结构化信息转换为metrics  |
+| ==kube-state-metrics==                                       |                                                              |
+| grafana                                                      | 用于大规模指标数据的可视化展现，是网络架构和应用分析中最流行的时序数据展示工具 |
 
 其中 k8s-prometheus-adapter 使用 Prometheus 实现了 metrics.k8s.io 和 custom.metrics.k8s.io API，所以**不需要再部署** metrics-server（ metrics-server 通过 kube-apiserver 发现所有节点，然后调用 kubelet APIs（通过 https 接口）获得各节点（Node）和 Pod 的 CPU、Memory 等资源使用情况。 从 Kubernetes 1.12 开始，kubernetes 的安装脚本移除了 Heapster，从 1.13 开始完全移除了对 Heapster 的支持，Heapster 不再被维护）。
 
@@ -594,11 +596,80 @@ kubectl delete pod prometheus-k8s-1 -n monitoring --force --grace-period=0
 
 **7、 Prometheus监控页面展示**
 
-==访问Prometheus web页面：==
+==访问Prometheus web页面：==` http://IP:39090/ `
 
 因为Prometheus的`replicas: 2`；所以可能会随机创建在三台机器中的任意两台。
 
-![1587564307734](assets/1587564307734.png)
+展开Status菜单，查看targets，可以看到只有图中两个监控任务没有对应的目标，这和serviceMonitor资源对象有关 
+
+![1587695789694](assets/1587695789694.png)
+
+查看yaml文件prometheus-serviceMonitorKubeScheduler，selector匹配的是service的标签，但是kube-system namespace中并没有k8s-app=kube-scheduler的service；
+
+```yml
+解决办法：
+
+新建prometheus-kubeSchedulerService.yaml
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: kube-system
+  name: kube-scheduler
+  labels:
+    k8s-app: kube-scheduler
+spec:
+  selector: 
+    component: kube-scheduler
+  ports:
+  - name: http-metrics
+    port: 10251
+    targetPort: 10251
+    protocol: TCP
+
+ 
+
+kubectl apply -f prometheus-kubeSchedulerService.yaml 
+同理新建prometheus-kubeControllerManagerService.yaml
+
+ 
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: kube-system
+  name: kube-controller-manager
+  labels:
+    k8s-app: kube-controller-manager
+spec:
+  selector:
+    component: kube-controller-manager
+  ports:
+  - name: http-metrics
+    port: 10252
+    targetPort: 10252
+    protocol: TCP
+
+```
+
+
+
+https://www.cnblogs.com/skyflask/p/11480988.html
+
+ https://www.cnblogs.com/huningfei/p/12705241.html 
+
+==**访问alertmanager web页面：**==` http://10.0.0.62:39093/ `
+
+![1587695594073](assets/1587695594073.png)
+
+![1587695684047](assets/1587695684047.png)
+
+
+
+
+
+
 
 
 
@@ -608,7 +679,7 @@ kubectl delete pod prometheus-k8s-1 -n monitoring --force --grace-period=0
 
 # 附录：
 
-# 使用Kube-prometheus，则无需部署以下插件
+使用Kube-prometheus，则无需部署以下插件
 
 
 

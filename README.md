@@ -135,6 +135,7 @@
 <table border="0">
     <tr>
         <td><a href="Kubernetes/01-Kubernets高可用集群.md">01-Kubernets 高可用集群</a></td>
+        <td><a href="Kubernetes/02-Kubernetes集群插件.md">02-Kubernetes 集群插件</a></td>
     </tr>
 </table>
 
@@ -142,10 +143,10 @@
 
 <table border="0">
     <tr>
-    <td><a href="Kubernetes/prometheus+grafana监控部署实践.md">prometheus+grafana监控部署实践</a></td>
-    <td><a href="Kubernetes/prometheus查询语法.md">prometheus查询语法</a></td>
-    <td><a href="Kubernetes/prometheus告警规则.md">prometheus告警规则</a></td>
-    <td><a href="Kubernetes/prometheus浅析.md">prometheus浅析</a></td>
+    <td><a href="Kubernetes/prometheus+grafana监控部署实践.md">prometheus+grafana 监控部署实践</a></td>
+    <td><a href="Kubernetes/prometheus查询语法.md">prometheus 查询语法</a></td>
+    <td><a href="Kubernetes/prometheus告警规则.md">prometheus 告警规则</a></td>
+    <td><a href="Kubernetes/prometheus浅析.md">prometheus 浅析</a></td>
     </tr>
 </table>
 
@@ -155,8 +156,8 @@
 
 <table border="0">
     <tr>
-        <td><a href="专高二/附录/CentOS6克隆虚机前优化.md">CentOS6克隆虚机前优化</a></td>
-		<td><a href="专高二/附录/CentOS7系统安装及克隆前优化.md">CentOS7系统安装及克隆前优化</a></td>
+        <td><a href="专高二/附录/CentOS6克隆虚机前优化.md">CentOS6 克隆虚机前优化</a></td>
+		<td><a href="专高二/附录/CentOS7系统安装及克隆前优化.md">CentOS7 系统安装及克隆前优化</a></td>
         <td><a href="专高二/附录/本地镜像YUM源.md">本地镜像YUM源</a></td>
     </tr>
 </table>

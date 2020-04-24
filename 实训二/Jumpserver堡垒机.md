@@ -485,7 +485,6 @@ worker_processes auto;
 error_log /var/log/nginx/error.log;
 pid /run/nginx.pid;
 
-# Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
 include /usr/share/nginx/modules/*.conf;
 
 events {
@@ -584,10 +583,11 @@ EOF
 
 ```bash
 nginx -t
+sed -i 's/KillMode/#KillMode/g' /usr/lib/systemd/system/nginx.service
 systemctl start nginx
 ```
 
-**17、jumpserver**
+**17、测试连接jumpserver**
 
 ```bash
 # 访问 http://10.0.0.41 (注意 没有 :8080 通过 nginx 代理端口进行访问)
