@@ -423,12 +423,81 @@ cd /opt/k8s/work/kube-prometheus-0.5.0/ && for i in `ls`;do docker load -i $i;do
 ```
 cd /opt/k8s/work
 git clone https://github.com/coreos/kube-prometheus.git
-
 ```
 
+**3、执行安装操作**
+
+```bash
+# 安装 prometheus-operator
+kubectl apply -f manifests/setup
+# 安装 promethes metric adapter
+kubectl apply -f manifests/
+```
+
+**4、查看Prometheus资源**
+
+```bash
+$ kubectl get pod -n monitoring
+NAME                                   READY   STATUS    RESTARTS   AGE
+alertmanager-main-0                    2/2     Running   0          108s
+alertmanager-main-1                    2/2     Running   0          108s
+alertmanager-main-2                    2/2     Running   0          107s
+grafana-86b55cb79f-g9xbh               1/1     Running   0          101s
+kube-state-metrics-dbb85dfd5-gj82l     3/3     Running   0          100s
+node-exporter-b52bj                    2/2     Running   0          99s
+node-exporter-dxf9s                    2/2     Running   0          99s
+node-exporter-php5z                    2/2     Running   0          99s
+prometheus-adapter-5cd5798d96-nphkz    1/1     Running   0          96s
+prometheus-k8s-0                       3/3     Running   1          90s
+prometheus-k8s-1                       3/3     Running   1          90s
+prometheus-operator-5cfbdc9b67-zpjzs   2/2     Running   1          2m37s
 
 
-**3、修改访问模式为nodeport**
+$ kubectl get svc -n monitoring
+NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+alertmanager-main       NodePort    10.254.76.23     <none>        9093:39093/TCP               27s
+alertmanager-operated   ClusterIP   None             <none>        9093/TCP,9094/TCP,9094/UDP   23s
+grafana                 NodePort    10.254.171.162   <none>        3000:33000/TCP               24s
+kube-state-metrics      ClusterIP   None             <none>        8443/TCP,9443/TCP            23s
+node-exporter           ClusterIP   None             <none>        9100/TCP                     23s
+prometheus-adapter      ClusterIP   10.254.157.0     <none>        443/TCP                      21s
+prometheus-k8s          NodePort    10.254.7.138     <none>        9090:39090/TCP               18s
+prometheus-operated     ClusterIP   None             <none>        9090/TCP                     12s
+prometheus-operator     ClusterIP   None             <none>        8443/TCP                     30s
+
+$ kubectl get ep -n monitoring
+NAME                    ENDPOINTS                                                          AGE
+alertmanager-main       172.30.216.6:9093,172.30.240.6:9093,172.30.40.6:9093               2m12s
+alertmanager-operated   172.30.216.6:9093,172.30.240.6:9093,172.30.40.6:9093 + 6 more...   2m12s
+grafana                 172.30.240.7:3000                                                  2m5s
+kube-state-metrics      172.30.40.7:9443,172.30.40.7:8443                                  2m4s
+node-exporter           10.0.0.61:9100,10.0.0.62:9100,10.0.0.63:9100                       2m3s
+prometheus-adapter      172.30.240.8:6443                                                  2m1s
+prometheus-k8s          172.30.216.7:9090,172.30.240.9:9090                                116s
+prometheus-operated     172.30.216.7:9090,172.30.240.9:9090                                116s
+prometheus-operator     172.30.216.5:8443                                                  3m
+```
+
+**5、清除资源**
+
+```bash
+kubectl delete --ignore-not-found=true -f manifests/ -f manifests/setup
+# 强制删除pod
+kubectl delete pod prometheus-k8s-1 -n monitoring --force --grace-period=0
+```
+
+以上各组件说明：
+
+- MerticServer： k8s集群资源使用情况的聚合器，收集数据给k8s集群内使用；如kubectl，hpa，scheduler
+- PrometheusOperator：是一个系统监测和警报工具箱，用来存储监控数据。
+- NodeExPorter：用于各个node的关键度量指标状态数据。
+- kubeStateMetrics：收集k8s集群内资源对象数据，指定告警规则。
+- Prometheus：采用pull方式收集apiserver，scheduler，control-manager，kubelet组件数据，通过http协议传输。
+- Grafana：是可视化数据统计和监控平台。
+
+**6、端口暴露--此处采用nodeport**
+
+**nodeport方式：**
 
 ==修改grafana-service文件：==
 
@@ -452,6 +521,7 @@ spec:
   selector:
     app: grafana
 EOF
+kubectl apply -f manifests/grafana-service.yaml
 ```
 
 ==修改Prometheus-service文件：==
@@ -478,6 +548,7 @@ spec:
     prometheus: k8s
   sessionAffinity: ClientIP
 EOF
+kubectl apply -f manifests/prometheus-service.yaml
 ```
 
 ==修改alertmanager-service文件：==
@@ -504,93 +575,60 @@ spec:
     app: alertmanager
   sessionAffinity: ClientIP
 EOF
+kubectl apply -f manifests/alertmanager-service.yaml
 ```
 
+**ingress方式：**
 
-
-**3、执行安装操作**
-
-```bash
-# 安装 prometheus-operator
-kubectl apply -f manifests/setup
-# 安装 promethes metric adapter
-kubectl apply -f manifests/
-```
-
-
-
-**4、查看需要哪些镜像**
+ 编辑ingress配置文件 
 
 ```yml
-[root@ k8s-m01 kube-prometheus]# grep -r quay.io manifests/*
-manifests/alertmanager-alertmanager.yaml:  image: quay.io/prometheus/alertmanager:v0.20.0
-manifests/kube-state-metrics-deployment.yaml:        image: quay.io/coreos/kube-state-metrics:v1.9.5
-manifests/kube-state-metrics-deployment.yaml:        image: quay.io/coreos/kube-rbac-proxy:v0.4.1
-manifests/kube-state-metrics-deployment.yaml:        image: quay.io/coreos/kube-rbac-proxy:v0.4.1
-manifests/node-exporter-daemonset.yaml:        image: quay.io/prometheus/node-exporter:v0.18.1
-manifests/node-exporter-daemonset.yaml:        image: quay.io/coreos/kube-rbac-proxy:v0.4.1
-manifests/prometheus-adapter-deployment.yaml:        image: quay.io/coreos/k8s-prometheus-adapter-amd64:v0.5.0
-manifests/prometheus-prometheus.yaml:  image: quay.io/prometheus/prometheus:v2.15.2
-manifests/setup/prometheus-operator-deployment.yaml:        - --prometheus-config-reloader=quay.io/coreos/prometheus-config-reloader:v0.38.1
-manifests/setup/prometheus-operator-deployment.yaml:        image: quay.io/coreos/prometheus-operator:v0.38.1
-manifests/setup/prometheus-operator-deployment.yaml:        image: quay.io/coreos/kube-rbac-proxy:v0.4.1
-
-[root@ k8s-m01 kube-prometheus]# grep -r jimmidyson manifests/*
-manifests/setup/prometheus-operator-deployment.yaml:        - --config-reloader-image=jimmidyson/configmap-reload:v0.3.0
-
+cd /opt/k8s/work/kube-prometheus/
+cat >manifests/ingress-monitoring.yaml<<EOF
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: prometheus-ing
+  namespace: monitoring
+spec:
+  rules:
+  - host: prometheus.monitoring.com
+    http:
+      paths:
+      - backend:
+          serviceName: prometheus-k8s
+          servicePort: 9090
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: grafana-ing
+  namespace: monitoring
+spec:
+  rules:
+  - host: grafana.monitoring.com
+    http:
+      paths:
+      - backend:
+          serviceName: grafana
+          servicePort: 3000
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: alertmanager-ing
+  namespace: monitoring
+spec:
+  rules:
+  - host: alertmanager.monitoring.com
+    http:
+      paths:
+      - backend:
+          serviceName: alertmanager-main
+          servicePort: 9093
+EOF
+kubectl apply -f manifests/ingress-monitoring.yaml 
 ```
-
-**5、查看Prometheus资源**
-
-```bash
-$ kubectl get pod -n monitoring
-NAME                                   READY   STATUS    RESTARTS   AGE
-alertmanager-main-0                    2/2     Running   0          15s
-alertmanager-main-1                    2/2     Running   0          15s
-alertmanager-main-2                    1/2     Running   0          15s
-grafana-86b55cb79f-j4qv5               0/1     Running   0          13s
-kube-state-metrics-dbb85dfd5-5zl2b     3/3     Running   0          12s
-node-exporter-dc6bs                    2/2     Running   0          12s
-node-exporter-vnvpl                    2/2     Running   0          12s
-node-exporter-z9r5q                    2/2     Running   0          12s
-prometheus-adapter-5cd5798d96-2qnd6    1/1     Running   0          10s
-prometheus-k8s-0                       3/3     Running   1          7s
-prometheus-k8s-1                       3/3     Running   1          7s
-prometheus-operator-5cfbdc9b67-ngv75   2/2     Running   0          34s
-
-
-$ kubectl get svc -n monitoring
-NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
-alertmanager-main       NodePort    10.254.76.23     <none>        9093:39093/TCP               27s
-alertmanager-operated   ClusterIP   None             <none>        9093/TCP,9094/TCP,9094/UDP   23s
-grafana                 NodePort    10.254.171.162   <none>        3000:33000/TCP               24s
-kube-state-metrics      ClusterIP   None             <none>        8443/TCP,9443/TCP            23s
-node-exporter           ClusterIP   None             <none>        9100/TCP                     23s
-prometheus-adapter      ClusterIP   10.254.157.0     <none>        443/TCP                      21s
-prometheus-k8s          NodePort    10.254.7.138     <none>        9090:39090/TCP               18s
-prometheus-operated     ClusterIP   None             <none>        9090/TCP                     12s
-prometheus-operator     ClusterIP   None             <none>        8443/TCP                     30s
-
-
-```
-
-**6、清除资源**
-
-```bash
-kubectl delete --ignore-not-found=true -f manifests/ -f manifests/setup
-
-#强制删除pod
-kubectl delete pod prometheus-k8s-1 -n monitoring --force --grace-period=0
-```
-
-以上各组件说明：
-
-- MerticServer： k8s集群资源使用情况的聚合器，收集数据给k8s集群内使用；如kubectl，hpa，scheduler
-- PrometheusOperator：是一个系统监测和警报工具箱，用来存储监控数据。
-- NodeExPorter：用于各个node的关键度量指标状态数据。
-- kubeStateMetrics：收集k8s集群内资源对象数据，指定告警规则。
-- Prometheus：采用pull方式收集apiserver，scheduler，control-manager，kubelet组件数据，通过http协议传输。
-- Grafana：是可视化数据统计和监控平台。
 
 
 
@@ -602,16 +640,36 @@ kubectl delete pod prometheus-k8s-1 -n monitoring --force --grace-period=0
 
 展开Status菜单，查看targets，可以看到只有图中两个监控任务没有对应的目标，这和serviceMonitor资源对象有关 
 
-![1587695789694](assets/1587695789694.png)
+![1587695789694](assets/1587695789694.png)查 **原因分析：**
 
-查看yaml文件prometheus-serviceMonitorKubeScheduler，selector匹配的是service的标签，但是kube-system namespace中并没有k8s-app=kube-scheduler的service；
+　　因为serviceMonitor选择svc时，是根据labels标签选取，而在指定的命名空间(kube-system)，并没有对应的标签。kube-apiserver之所以正常是因为kube-apiserver 服务 namespace 在default使用默认svc kubernetes。其余组件服务在kube-system 空间 ，需要单独创建svc。
+
+**解决办法：**
 
 ```yml
-解决办法：
+# 查看serviceMonitor选取svc规则
+[root@ k8s-m01 kube-prometheus]# grep -2 selector manifests/prometheus-serviceMonitorKube*
+manifests/prometheus-serviceMonitorKubeControllerManager.yaml-    matchNames:
+manifests/prometheus-serviceMonitorKubeControllerManager.yaml-    - kube-system
+manifests/prometheus-serviceMonitorKubeControllerManager.yaml:  selector:
+manifests/prometheus-serviceMonitorKubeControllerManager.yaml-    matchLabels:
+manifests/prometheus-serviceMonitorKubeControllerManager.yaml-      k8s-app: kube-controller-manager
+--
+manifests/prometheus-serviceMonitorKubelet.yaml-    matchNames:
+manifests/prometheus-serviceMonitorKubelet.yaml-    - kube-system
+manifests/prometheus-serviceMonitorKubelet.yaml:  selector:
+manifests/prometheus-serviceMonitorKubelet.yaml-    matchLabels:
+manifests/prometheus-serviceMonitorKubelet.yaml-      k8s-app: kubelet
+--
+manifests/prometheus-serviceMonitorKubeScheduler.yaml-    matchNames:
+manifests/prometheus-serviceMonitorKubeScheduler.yaml-    - kube-system
+manifests/prometheus-serviceMonitorKubeScheduler.yaml:  selector:
+manifests/prometheus-serviceMonitorKubeScheduler.yaml-    matchLabels:
+manifests/prometheus-serviceMonitorKubeScheduler.yaml-      k8s-app: kube-scheduler
 
-新建prometheus-kubeSchedulerService.yaml
-
-
+# 新建prometheus-kubeSchedulerService.yaml
+cd /opt/k8s/work/kube-prometheus/
+cat >manifests/prometheus-kubeSchedulerService.yaml<<EOF
 apiVersion: v1
 kind: Service
 metadata:
@@ -620,21 +678,37 @@ metadata:
   labels:
     k8s-app: kube-scheduler
 spec:
-  selector: 
+  selector:
     component: kube-scheduler
+  type: ClusterIP
+  clusterIP: None
   ports:
   - name: http-metrics
     port: 10251
     targetPort: 10251
     protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  labels:
+    k8s-app: kube-scheduler
+  name: kube-scheduler
+  namespace: kube-system
+subsets:
+- addresses:
+  - ip: 10.0.0.61
+  - ip: 10.0.0.62
+  - ip: 10.0.0.63
+  ports:
+  - name: http-metrics
+    port: 10251
+    protocol: TCP
+EOF
+kubectl apply -f manifests/prometheus-kubeSchedulerService.yaml
 
- 
-
-kubectl apply -f prometheus-kubeSchedulerService.yaml 
-同理新建prometheus-kubeControllerManagerService.yaml
-
- 
-
+# 同理新建prometheus-kubeControllerManagerService.yaml
+cat >manifests/prometheus-kubeControllerManagerService.yaml<<EOF  
 apiVersion: v1
 kind: Service
 metadata:
@@ -645,21 +719,37 @@ metadata:
 spec:
   selector:
     component: kube-controller-manager
+  type: ClusterIP
+  clusterIP: None
   ports:
   - name: http-metrics
     port: 10252
     targetPort: 10252
     protocol: TCP
-
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  labels:
+    k8s-app: kube-controller-manager
+  name: kube-controller-manager
+  namespace: kube-system
+subsets:
+- addresses:
+  - ip: 10.0.0.61
+  - ip: 10.0.0.62
+  - ip: 10.0.0.63
+  ports:
+  - name: http-metrics
+    port: 10252
+    protocol: TCP
+EOF
+kubectl apply -f manifests/prometheus-kubeControllerManagerService.yaml
 ```
 
 
 
-https://www.cnblogs.com/skyflask/p/11480988.html
-
- https://www.cnblogs.com/huningfei/p/12705241.html 
-
-==**访问alertmanager web页面：**==` http://10.0.0.62:39093/ `
+==**访问alertmanager web页面：**== http://10.0.0.62:39093/ 
 
 ![1587695594073](assets/1587695594073.png)
 
@@ -667,9 +757,109 @@ https://www.cnblogs.com/skyflask/p/11480988.html
 
 
 
+**==访问 grafana ：==** http://10.0.0.62:33000/login 
+
+![1587781355300](assets/1587781355300.png)
+
+用 admin/admin 登录：
+
+![1587781394558](assets/1587781394558.png)
+
+本身自带很多模板：
+
+![1587781971156](assets/1587781971156.png)
+
+![1587782053081](assets/1587782053081.png)
+
+当然，也可以去grafana官网其去找模板，或者自己写。
 
 
 
+## 1.4 EFK
+
+**1、EFK 组件简介**
+
+![bd0c6694-06c1-44bb-992d-1d9dfcf51dc8](assets/bd0c6694-06c1-44bb-992d-1d9dfcf51dc8.jpg)
+
+
+
+
+
+顾名思义，EFK 是 Elasticsearch、Fluentd、Kibana 三个开源软件组件的首字母缩写，EFK 是业界主流的容器时代日志收集处理的最佳解决方案。三个组件组合起来工作就是 EFK，组件之间数据流是这样：Log 源（比如 Log 文件、k8s Pod 日志、Docker 日志驱动等等）—> Fluentd 收集 —> Elasticsearch 存储 —> Kibana UI 查看。
+
+Kubernetes中比较流行的日志收集解决方案是Elasticsearch、Fluentd 和 Kibana（EFK）技术栈，也是官方现在比较推荐的一种方案。
+
+- Elasticsearch是一个实时的、分布式的可扩展的搜索引擎，允许进行全文、结构化搜索，它通常用于索引和搜索大量日志数据，也可用于搜索许多不同类型的文档。
+- Fluentd是一个流行的开源数据收集器，是CNCF的毕业项目。我们将在Kubernetes集群节点上以DaemonSet的方式安装Fluentd，通过获取容器日志文件、过滤和转换日志数据，然后将数据传递到 Elasticsearch集群，在该集群中对其进行索引和存储。
+- Kibana是Elasticsearch的一个功能强大的数据可视化 dashboard，Kibana提供了web 界面来浏览 Elasticsearch 日志数据。
+
+
+
+**2、日志层次**
+
+在Kubernetes中，有三个层次的日志：
+
+- 基础日志
+
+- Node级别的日志
+- 群集级别的日志架构
+
+
+
+**基础日志**
+
+​		kubernetes基础日志即将日志数据输出到标准输出流，可以使用kubectl  logs命令获取容器日志信息。如果Pod中有多个容器，可以通过将容器名称附加到命令来指定要访问哪个容器的日志。例如，在Kubernetes集群中的devops命名空间下有一个名称为nexus3-f5b7fc55c-hq5v7的Pod，就可以通过如下的命令获取日志：
+
+```
+$ kubectl logs nexus3-f5b7fc55c-hq5v7 --namespace=devops
+```
+
+**Node级别的日志**
+
+​		容器化应用写入到stdout和stderr的所有内容都是由容器引擎处理和重定向的。例如，docker容器引擎会将这两个流重定向到日志记录驱动，在Kubernetes中该日志驱动被配置为以json格式写入文件。docker json日志记录驱动将每一行视为单独的消息。当使用docker日志记录驱动时，并不支持多行消息，因此需要在日志代理级别或更高级别上处理多行消息。
+
+​		默认情况下，如果容器重新启动，kubectl将会保留一个已终止的容器及其日志。如果从Node中驱逐Pod，那么Pod中所有相应的容器也会连同它们的日志一起被驱逐。Node级别的日志中的一个重要考虑是实现日志旋转，这样日志不会消耗Node上的所有可用存储。Kubernetes目前不负责旋转日志，部署工具应该建立一个解决方案来解决这个问题。
+
+![logging-node-level](assets/logging-node-level.png)
+
+
+
+在Kubernetes中有两种类型的系统组件：运行在容器中的组件和不在容器中运行的组件。例如：
+
+- kubernetes调度器和kube-proxy在容器中运行。
+- kubelet和容器运行时，例如docker，不在容器中运行。
+
+在带有systemd的机器上，kubelet和容器运行时写入journaId。如果systemd不存在，它们会在/var/log目录中写入.log文件。在容器中的系统组件总是绕过默认的日志记录机制，写入到/var/log目录，它们使用golg日志库。可以找到日志记录中开发文档中那些组件记录严重性的约定。
+类似于容器日志，在/var/log目录中的系统组件日志应该被旋转。这些日志被配置为每天由logrotate进行旋转，或者当大小超过100mb时进行旋转。
+
+
+
+**集群级别的日志架构**
+
+Kubernetes本身没有为群集级别日志记录提供原生解决方案，但有几种常见的方法可以采用：
+
+- 使用运行在每个Node上的Node级别的日志记录代理；
+- 在应用Pod中包含一个用于日志记录的sidecar。
+- 将日志直接从应用内推到后端。
+
+经过综合考虑，本文采用通过在每个Node上包括Node级别的日志记录代理来实现群集级别日志记录。日志记录代理暴露日志或将日志推送到后端的专用工具。通常，logging-agent是一个容器，此容器能够访问该Node上的所有应用程序容器的日志文件。
+
+因为日志记录必须在每个Node上运行，所以通常将它作为DaemonSet副本、或一个清单Pod或Node上的专用本机进程。然而，后两种方法后续将会被放弃。使用Node级别日志记录代理是Kubernetes集群最常见和最受欢迎的方法，因为它只为每个节点创建一个代理，并且不需要对节点上运行的应用程序进行任何更改。但是，Node级别日志记录仅适用于应用程序的标准输出和标准错误。
+
+Kubernetes本身并没有指定日志记录代理，但是有两个可选的日志记录代理与Kubernetes版本打包发布：和谷歌云平台一起使用的Stackdriver和Elasticsearch，两者都使用自定义配置的fluentd作为Node上的代理。在本文的方案中，Logging-agent 采用 Fluentd，而 Logging Backend 采用 Elasticsearch，前端展示采用Grafana。即通过 Fluentd 作为 Logging-agent 收集日志，并推送给后端的Elasticsearch；Grafana从Elasticsearch中获取日志，并进行统一的展示。
+
+![微信截图_20180709162118](assets/微信截图_20180709162118.png)
+
+**3、部署**
+
+将下载的 kubernetes-server-linux-amd64.tar.gz 解压后，再解压其中的 kubernetes-src.tar.gz 文件。
+
+```bash
+cd /opt/k8s/work/kubernetes/
+tar -xzvf kubernetes-src.tar.gz
+```
+
+EFK 目录是 `kubernetes/cluster/addons/fluentd-elasticsearch`。
 
 
 
@@ -680,8 +870,6 @@ https://www.cnblogs.com/skyflask/p/11480988.html
 # 附录：
 
 使用Kube-prometheus，则无需部署以下插件
-
-
 
 ## 1.1 Metrics-server
 

@@ -124,7 +124,8 @@
 
 <table border="0">
     <tr>
-        <td><a href="Kubernetes/第一章 Kubernetes入门及实践.md">第一章 Kubernetes入门及实践</a></td>
+        <td><a href="Kubernetes/kubernetes权威指南/第一章 Kubernetes组件及概念.md">第一章 Kubernetes组件及概念</a></td>
+         <td><a href="Kubernetes/kubernetes权威指南/第二章 Kubernetes实践部署.md">第二章 Kubernetes实践部署</a></td>
     </tr>
 </table>
 
