@@ -429,8 +429,8 @@ An optional company name []:回车
 
 删除私钥口令
 
-```
-$ cd /etc/nginx/ssl
+```bash
+$ cd /usr/local/nginx/ssl
 $ cp server.key server.key.ori
 $ openssl rsa -in server.key.ori -out server.key
 Enter pass phrase for server.key.ori:123456
