@@ -4,20 +4,6 @@
 
 # Kubernets 高可用集群
 
-**官方提供的三种部署方式**
-
-**1.minikube**
-
-Minikube是一个工具，可以在本地快速运行一个单点的Kubernetes，仅用于尝试Kubernetes或日常开发的用户使用。 部署地址：<https://kubernetes.io/docs/setup/minikube/>
-
-**2.kubeadm**
-
-Kubeadm也是一个工具，提供kubeadm init和kubeadm join，用于快速部署Kubernetes集群。 部署地址：<https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/>
-
-**3.二进制包**
-
-推荐，从官方下载发行版的二进制包，手动部署每个组件，组成Kubernetes集群。 下载地址：<https://github.com/kubernetes/kubernetes/releases>
-
 
 
 # 1.1 环境规划
@@ -161,7 +147,47 @@ setenforce 0
 sed -i  '/^SELINUX/s#enforcing#disabled#g' /etc/selinux/config
 ```
 
-**12、升级内核**
+**12、设置rsyslogd 和systemd journald**
+
+systemd 的 journald 是 Centos 7 缺省的日志记录工具，它记录了所有系统、内核、Service Unit 的日志。相比 systemd，journald 记录的日志有如下优势：
+
+- 可以记录到内存或文件系统；(默认记录到内存，对应的位置为 /run/log/jounal)；
+- 可以限制占用的磁盘空间、保证磁盘剩余空间；
+- 可以限制日志文件大小、保存的时间；
+- journald 默认将日志转发给 rsyslog，这会导致日志写了多份，/var/log/messages 中包含了太多无关日志，不方便后续查看，同时也影响系统性能。
+
+```bash
+mkdir /var/log/journal
+mkdir /etc/systemd/journald.conf.d
+cat > /etc/systemd/journald.conf.d/99-prophet.conf <<EOF
+[Journal]
+# 持久化保存到磁盘
+Storage=persistent
+     
+# 压缩历史日志
+Compress=yes
+     
+SyncIntervalSec=5m
+RateLimitInterval=30s
+RateLimitBurst=1000
+     
+# 最大占用空间 10G
+SystemMaxUse=10G
+     
+# 单日志文件最大 200M
+SystemMaxFileSize=200M
+     
+# 日志保存时间 2 周
+MaxRetentionSec=2week
+     
+# 不将日志转发到 syslog
+ForwardToSyslog=no
+EOF
+     
+systemctl restart systemd-journald
+```
+
+**13、升级内核**
 
 Docker overlay2需要使用kernel 4.x版本，所以我们需要升级内核。
 

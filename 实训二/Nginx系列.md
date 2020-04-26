@@ -21,7 +21,7 @@
 1. 新版本上线，为了保证新版本稳定性，需要用线上的流量的引入，对新版本进行真实流量测试。如果新版本上线有问题，为降低影响范围，我们对流量的引入应该为从小到大的策略。
 2. 现如今是移动端的时代，而移动端和pc端的设备的不同，需要对移动端和pc的流量进行不同的处理，同时可以针对两种设备的不同需求可以单独升级，可控性强，且架构灵活。
 
-## **2、nginx策略配置**
+**2、nginx策略配置**
 
 针对以上两种场景，nginx做为强大的web服务器，通过简单的配置来就可以满足我们的需求，下面我们就开始实战：
 
@@ -368,28 +368,29 @@ Let’s Encrypt提供了免费的证书申请服务，同时也提供了官方�
 
 **openssl自签证书**
 
-
-
-
-
 **3.自签证书测试**
 
 **安装nginx**
 
 ```shell
-yum -y install nginx
+yum -y install make zlib zlib-devel gcc-c++ libtool  openssl openssl-devel  wget pcre pcre-devel
+wget http://nginx.org/download/nginx-1.14.2.tar.gz
+tar -zxvf nginx-1.14.2.tar.gz
+cd nginx-1.14.2
+./configure --with-http_stub_status_module --with-http_ssl_module
+make
+make install
 ```
 
 **检查Nginx的SSL模块**
 
 ```shell
-[root@ docker ~]# nginx -V
-nginx version: nginx/1.16.1
+$ /usr/local/nginx/sbin/nginx -V
+nginx version: nginx/1.14.2
 built by gcc 4.8.5 20150623 (Red Hat 4.8.5-39) (GCC)
 built with OpenSSL 1.0.2k-fips  26 Jan 2017
 TLS SNI support enabled
-configure arguments: --prefix=/usr/share/nginx --sbin-path=/usr/sbin/nginx --modules-
---with-http_ssl_module --with-http_v2_module --with-http_realip_module --with-stream_ssl_preread_module 
+configure arguments: --with-http_stub_status_module --with-http_ssl_module
 ```
 
 **准备私钥和证书**
@@ -397,21 +398,20 @@ configure arguments: --prefix=/usr/share/nginx --sbin-path=/usr/sbin/nginx --mod
 创建私钥
 
 ```shell
-[root@ docker ~]# cd /etc/nginx/
-[root@ docker nginx]# mkdir -p ssl
-[root@ docker nginx]# cd ssl/
-[root@ docker ssl]# openssl genrsa -des3 -out server.key 1024
+$ cd /usr/local/nginx
+$ mkdir -p ssl
+$ cd ssl/
+$ openssl genrsa -des3 -out server.key 1024
 Enter pass phrase for server.key:123456
 Verifying - Enter pass phrase for server.key:123456
-[root@ docker ssl]# ll
-total 4
+$  ll
 -rw-r--r-- 1 root root 963 2020-02-26 02:43 server.key
 ```
 
 签发证书
 
 ```shell
-[root@ docker ssl]# openssl req -new -key server.key -out server.csr
+$ openssl req -new -key server.key -out server.csr
 Enter pass phrase for server.key: 123456
 
 Country Name (2 letter code) [XX]:CN
@@ -430,42 +430,60 @@ An optional company name []:回车
 删除私钥口令
 
 ```
-[root@ docker ssl]# cd /etc/nginx/ssl
-[root@ docker ssl]# cp server.key server.key.ori
-[root@ docker ssl]# openssl rsa -in server.key.ori -out server.key
+$ cd /etc/nginx/ssl
+$ cp server.key server.key.ori
+$ openssl rsa -in server.key.ori -out server.key
 Enter pass phrase for server.key.ori:123456
 ```
 
 生成使用签名请求证书和私钥生成自签证书
 
 ```shell
-[root@ docker ssl]# openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
-
-Signature ok
-subject=/C=CN/ST=BJ/L=BJ/O=SDU/OU=BJ/CN=wjj/emailAddress=602616568@qq.com
-Getting Private key
-Enter pass phrase for server.key:密码
+$ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 ```
 
 **4.开启Nginx SSL**
 
 ```shell
-创建虚拟主机
-[root@ docker conf.d]# mkdir -p /etc/nginx/html
-[root@ docker conf.d]# vim hack.conf
+# 创建虚拟主机子目录
+mkdir -p /usr/local/nginx/conf/conf.d
+
+# 精简主配置文件
+
+cat >/usr/local/nginx/conf/nginx.conf<<EOF
+user  nobody;
+worker_processes  1;
+events {
+	worker_connections  1024;
+}
+http {
+	include       mime.types;
+	default_type  application/octet-stream;
+	sendfile        on;
+	keepalive_timeout  65;
+	include conf.d/*.conf;
+
+}
+EOF
+
+# 启动nginx，并查看进程
+/usr/local/nginx/sbin/nginx
+
+
+# 创建虚拟主机子配置文件
+cat >/usr/local/nginx/conf/conf.d/hack.conf<<EOF
 server {
     listen       443 ssl;
     server_name  www.hack.com;
 
-    ssl_certificate /etc/nginx/ssl/server.crt;
-    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_certificate /usr/local/nginx/ssl/server.crt;
+    ssl_certificate_key /usr/local/nginx/ssl/server.key;
 
     # Load configuration files for the default server block.
-    include /etc/nginx/default.d/*.conf;
 
     location / {
     #定义站点目录
-        root    /etc/nginx/html;
+        root   /usr/local/nginx/html;
     }
 
     error_page 404 /404.html;
@@ -476,27 +494,33 @@ server {
         location = /50x.html {
     }
 }
+EOF
 
-[root@ docker conf.d]# nginx -t
-[root@ docker conf.d]# nginx -s reload
+# 重新加载配置文件
+/usr/local/nginx/sbin/nginx -t
+/usr/local/nginx/sbin/nginx -s reload
 ```
 
-绑定windows的hosts，然后谷歌浏览器访问`https://www.hack.com/hack.html`。
+绑定windows的hosts：
 
 ```
-10.0.0.90 www.hack.com
+10.0.0.41 www.hack.com
 ```
+
+上传 [hack.html](assets\hack.html) 到/usr/local/nginx/html目录。
+
+然后谷歌浏览器访问：https://www.hack.com/hack.html
 
 ![1582706367414](assets/1582706367414.png)
 
-此时，你会发现，`http://www.hack.com/hack.html`，浏览器访问不了了（注意浏览器缓存），这时就需要将80端口重定向到443端口。
+此时，你会发现，http://www.hack.com/hack.html，浏览器访问不了了，需要进行rewrite跳转。
 
 **5.rewrite跳转**
 
 以上配置有个不好的地方，如果用户忘了使用https或者443端口，那么网站将无法访问，因此需要将80端口的访问转到443端口并使用ssl加密访问。只需要增加一个server段，使用301永久重定向。
 
 ```shell
-[root@ docker conf.d]# vim hack.conf
+cat >/usr/local/nginx/conf/conf.d/hack.conf<<EOF
 server {
     listen 80;
     server_name www.hack.com;
@@ -507,15 +531,14 @@ server {
     listen       443 ssl;
     server_name  www.hack.com;
 
-    ssl_certificate /etc/nginx/ssl/server.crt;
-    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_certificate /usr/local/nginx/ssl/server.crt;
+    ssl_certificate_key /usr/local/nginx/ssl/server.key;
 
     # Load configuration files for the default server block.
-    include /etc/nginx/default.d/*.conf;
 
     location / {
     #定义站点目录
-        root    /etc/nginx/html;
+        root   /usr/local/nginx/html;
     }
 
     error_page 404 /404.html;
@@ -526,12 +549,14 @@ server {
         location = /50x.html {
     }
 }
+EOF
 
-[root@ docker conf.d]# nginx -t
-[root@ docker conf.d]# nginx -s reload
+# 重新加载配置文件
+/usr/local/nginx/sbin/nginx -t
+/usr/local/nginx/sbin/nginx -s reload
 ```
 
-这时，浏览器访问`http://www.hack.com/hack.html`，nginx会将请求跳转到`https://www.hack.com/hack.html`，详细可以查看nginx日志。
+这时，浏览器访问 http://www.hack.com/hack.html，nginx会将请求跳转到 https://www.hack.com/hack.html，详细可以查看nginx日志。
 
 
 

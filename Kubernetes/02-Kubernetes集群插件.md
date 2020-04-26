@@ -852,6 +852,26 @@ Kubernetes本身并没有指定日志记录代理，但是有两个可选的日�
 
 **3、部署**
 
+上传镜像并解压导入
+
+```bash
+rz elk.tar.gz
+cd /opt/k8s/work
+source /opt/k8s/bin/environment.sh
+for node_ip in ${MASTER_IPS[@]}
+do
+	echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
+	scp elk.tar.gz root@${node_ip}:/opt/k8s/work
+	ssh root@${node_ip} "cd /opt/k8s/work/ && tar -zxf elk.tar.gz"
+done
+```
+
+所有节点导入镜像
+
+```
+cd /opt/k8s/work/elk/ && for i in `ls`;do docker load -i $i;done
+```
+
 将下载的 kubernetes-server-linux-amd64.tar.gz 解压后，再解压其中的 kubernetes-src.tar.gz 文件。
 
 ```bash
@@ -861,9 +881,32 @@ tar -xzvf kubernetes-src.tar.gz
 
 EFK 目录是 `kubernetes/cluster/addons/fluentd-elasticsearch`。
 
+执行定义文件
 
+```bash
+cd /opt/k8s/work/kubernetes/cluster/addons/fluentd-elasticsearch
+kubectl apply -f .
+```
 
+检查执行结果
 
+```bash
+$ kubectl get all -n kube-system |grep -E 'elasticsearch|fluentd|kibana'
+pod/elasticsearch-logging-0                   1/1     Running   0          15m
+pod/elasticsearch-logging-1                   1/1     Running   0          14m
+pod/fluentd-es-v2.7.0-98slb                   1/1     Running   0          15m
+pod/fluentd-es-v2.7.0-v25tz                   1/1     Running   0          15m
+pod/fluentd-es-v2.7.0-zngpm                   1/1     Running   0          15m
+pod/kibana-logging-75888755d6-nw6bc           1/1     Running   0          5m40s
+service/elasticsearch-logging   ClusterIP   10.254.11.19     <none>        9200/TCP                 15m
+service/kibana-logging          ClusterIP   10.254.207.146   <none>        5601/TCP                 15m
+daemonset.apps/fluentd-es-v2.7.0   3         3         3       3            3           <none>                   15m
+deployment.apps/kibana-logging            1/1     1            1           15m
+replicaset.apps/kibana-logging-75888755d6           1         1         1       15m
+statefulset.apps/elasticsearch-logging   2/2     15m
+```
+
+注意：只有当 Kibana pod 启动完成后，浏览器才能查看 kibana dashboard，否则会被拒绝。
 
 
 
