@@ -413,14 +413,14 @@ $  ll
 ```shell
 $ openssl req -new -key server.key -out server.csr
 Enter pass phrase for server.key: 123456
-
-Country Name (2 letter code) [XX]:CN
-State or Province Name (full name) []:BJ
-Locality Name (eg, city) [Default City]:BJ
-Organization Name (eg, company) [Default Company Ltd]:SDU
-Organizational Unit Name (eg, section) []:BJ
-Common Name (eg, your name or your server's hostname) []:wjj
-Email Address []:602616568@qq.com
+# 然后一路会回车
+Country Name (2 letter code) [XX]:
+State or Province Name (full name) []:
+Locality Name (eg, city) [Default City]:
+Organization Name (eg, company) [Default Company Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) []:
+Email Address []:
 
 A challenge password []:回车
 An optional company name []:回车
