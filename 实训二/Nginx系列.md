@@ -449,7 +449,6 @@ $ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 mkdir -p /usr/local/nginx/conf/conf.d
 
 # 精简主配置文件
-
 cat >/usr/local/nginx/conf/nginx.conf<<EOF
 user  nobody;
 worker_processes  1;
@@ -469,29 +468,20 @@ EOF
 # 启动nginx，并查看进程
 /usr/local/nginx/sbin/nginx
 
-
 # 创建虚拟主机子配置文件
 cat >/usr/local/nginx/conf/conf.d/hack.conf<<EOF
 server {
     listen       443 ssl;
     server_name  www.hack.com;
-
+    ssl on;
     ssl_certificate /usr/local/nginx/ssl/server.crt;
     ssl_certificate_key /usr/local/nginx/ssl/server.key;
 
-    # Load configuration files for the default server block.
 
     location / {
     #定义站点目录
         root   /usr/local/nginx/html;
-    }
-
-    error_page 404 /404.html;
-        location = /40x.html {
-    }
-
-    error_page 500 502 503 504 /50x.html;
-        location = /50x.html {
+        index index.php  index.html index.htm;
     }
 }
 EOF
@@ -530,23 +520,15 @@ server {
 server {
     listen       443 ssl;
     server_name  www.hack.com;
-
+    ssl on;
     ssl_certificate /usr/local/nginx/ssl/server.crt;
     ssl_certificate_key /usr/local/nginx/ssl/server.key;
 
-    # Load configuration files for the default server block.
 
     location / {
     #定义站点目录
         root   /usr/local/nginx/html;
-    }
-
-    error_page 404 /404.html;
-        location = /40x.html {
-    }
-
-    error_page 500 502 503 504 /50x.html;
-        location = /50x.html {
+        index index.php  index.html index.htm;
     }
 }
 EOF
