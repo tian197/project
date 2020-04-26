@@ -461,7 +461,6 @@ http {
 	sendfile        on;
 	keepalive_timeout  65;
 	include conf.d/*.conf;
-
 }
 EOF
 
@@ -476,7 +475,6 @@ server {
     ssl on;
     ssl_certificate /usr/local/nginx/ssl/server.crt;
     ssl_certificate_key /usr/local/nginx/ssl/server.key;
-
 
     location / {
     #定义站点目录
@@ -510,7 +508,7 @@ EOF
 以上配置有个不好的地方，如果用户忘了使用https或者443端口，那么网站将无法访问，因此需要将80端口的访问转到443端口并使用ssl加密访问。只需要增加一个server段，使用301永久重定向。
 
 ```shell
-cat >/usr/local/nginx/conf/conf.d/hack.conf<<EOF
+cat >/usr/local/nginx/conf/conf.d/hack.conf<<\EOF
 server {
     listen 80;
     server_name www.hack.com;
