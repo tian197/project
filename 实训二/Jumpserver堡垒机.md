@@ -246,19 +246,19 @@ pip是一个很好用的第三方库安装方式，但是默认的源没法连�
 **临时方法**
 
 ```bash
-阿里云 [https://mirrors.aliyun.com/pypi/simple/][1]
-中国科技大学 [https://pypi.mirrors.ustc.edu.cn/simple/][2] 
-豆瓣(douban) [https://pypi.douban.com/simple/][3] 
-清华大学 [https://pypi.tuna.tsinghua.edu.cn/simple/][4]
-中国科学技术大学 [http://pypi.mirrors.ustc.edu.cn/simple/][5]
-华中理工大学：[http://pypi.hustunique.com/][6]
-山东理工大学：[http://pypi.sdutlinux.org/][7]
+阿里云 https://mirrors.aliyun.com/pypi/simple/
+中国科技大学 https://pypi.mirrors.ustc.edu.cn/simple/
+豆瓣(douban) https://pypi.douban.com/simple/ 
+清华大学 https://pypi.tuna.tsinghua.edu.cn/simple/
+中国科学技术大学 http://pypi.mirrors.ustc.edu.cn/simple/
+华中理工大学：http://pypi.hustunique.com/
+山东理工大学：http://pypi.sdutlinux.org/
 ```
 
 使用时直接 -i 加 url 即可如下安装：
 
 ```bash
-pip install jupyter -i http://pypi.tuna.tsinghua.edu.cn/simple
+pip install jupyter -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 
