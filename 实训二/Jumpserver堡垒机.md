@@ -173,9 +173,9 @@ systemctl start redis
 #gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
 #gpgcheck=1
 #EOF
-#yum clear all
-#yum makecache
 
+yum clear all
+yum makecache
 yum -y install mariadb mariadb-devel mariadb-server MariaDB-shared
 systemctl enable mariadb
 systemctl start mariadb
@@ -224,6 +224,7 @@ git clone --depth=1 https://github.com/jumpserver/jumpserver.git
 **10、安装依赖 RPM 包**
 
 ```bash
+
 yum -y install $(cat /opt/jumpserver/requirements/rpm_requirements.txt)
 ```
 
