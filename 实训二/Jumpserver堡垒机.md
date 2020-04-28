@@ -166,15 +166,15 @@ systemctl start redis
 **4、安装 MySQL, 如果不使用 Mysql 可以跳过相关 Mysql 安装和配置, 支持sqlite3, mysql, postgres等**
 
 ```bash
-cat >/etc/yum.repos.d/mariadb.repo<<EOF
-[mariadb]
-name = MariaDB
-baseurl = http://yum.mariadb.org/10.3/centos7-amd64
-gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-gpgcheck=1
-EOF
-yum clear all
-yum makecache
+#cat >/etc/yum.repos.d/mariadb.repo<<EOF
+#[mariadb]
+#name = MariaDB
+#baseurl = http://yum.mariadb.org/10.3/centos7-amd64
+#gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+#gpgcheck=1
+#EOF
+#yum clear all
+#yum makecache
 
 yum -y install mariadb mariadb-devel mariadb-server MariaDB-shared
 systemctl enable mariadb
