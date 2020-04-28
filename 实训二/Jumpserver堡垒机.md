@@ -232,7 +232,7 @@ yum -y install $(cat /opt/jumpserver/requirements/rpm_requirements.txt)
 ```bash
 pip install wheel
 pip install --upgrade pip setuptools
-pip install -r /opt/jumpserver/requirements/requirements.txt -i http://pypi.tuna.tsinghua.edu.cn/simple
+pip install -r /opt/jumpserver/requirements/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 >  [pip 20.0.2文档](https://pip.pypa.io/en/stable/)  https://pip.pypa.io/en/stable/user_guide/#config-file 
@@ -245,10 +245,10 @@ pip是一个很好用的第三方库安装方式，但是默认的源没法连�
 
 **临时方法**
 
-```
-阿里云 [http://mirrors.aliyun.com/pypi/simple/][1]
+```bash
+阿里云 [https://mirrors.aliyun.com/pypi/simple/][1]
 中国科技大学 [https://pypi.mirrors.ustc.edu.cn/simple/][2] 
-豆瓣(douban) [http://pypi.douban.com/simple/][3] 
+豆瓣(douban) [https://pypi.douban.com/simple/][3] 
 清华大学 [https://pypi.tuna.tsinghua.edu.cn/simple/][4]
 中国科学技术大学 [http://pypi.mirrors.ustc.edu.cn/simple/][5]
 华中理工大学：[http://pypi.hustunique.com/][6]
