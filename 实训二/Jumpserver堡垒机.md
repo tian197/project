@@ -233,7 +233,7 @@ yum -y install $(cat /opt/jumpserver/requirements/rpm_requirements.txt)
 ```bash
 pip install wheel
 pip install --upgrade pip setuptools
-pip install -r /opt/jumpserver/requirements/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -r /opt/jumpserver/requirements/requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 ```
 
 >  [pip 20.0.2文档](https://pip.pypa.io/en/stable/)  https://pip.pypa.io/en/stable/user_guide/#config-file 
@@ -268,11 +268,13 @@ pip install jupyter -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ```bash
 cd /opt/jumpserver
-cp config_example.yml config.yml
+\cp config_example.yml config.yml
 
-SECRET_KEY=`cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 50`  # 生成随机SECRET_KEY
+# 生成随机SECRET_KEY
+SECRET_KEY=`cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 50`
 echo "SECRET_KEY=$SECRET_KEY" >> ~/.bashrc
-BOOTSTRAP_TOKEN=`cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 16`  # 生成随机BOOTSTRAP_TOKEN
+# 生成随机BOOTSTRAP_TOKEN
+BOOTSTRAP_TOKEN=`cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 16`
 echo "BOOTSTRAP_TOKEN=$BOOTSTRAP_TOKEN" >> ~/.bashrc
 
 sed -i "s/SECRET_KEY:/SECRET_KEY: $SECRET_KEY/g" /opt/jumpserver/config.yml
@@ -462,6 +464,8 @@ echo -e "\033[31m 你的服务器IP是 $Server_IP \033[0m"
 
 运行koko 与 guacamole
 
+由于网络问题；可以手动导入镜像。
+
 ```bash
 # http://<Jumpserver_url> 指向 jumpserver 的服务端口, 如 http://192.168.244.144:8080
 # BOOTSTRAP_TOKEN 为 Jumpserver/config.yml 里面的 BOOTSTRAP_TOKEN
@@ -594,6 +598,7 @@ EOF
 ```bash
 nginx -t
 sed -i 's/KillMode/#KillMode/g' /usr/lib/systemd/system/nginx.service
+systemctl daemon-reload
 systemctl start nginx
 ```
 
