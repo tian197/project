@@ -1,4 +1,4 @@
- [hack.html](实训三\assets\hack.html) 
+<img src="assets/hack.gif" alt="hack" style="zoom:200%;" />
 
 
 
