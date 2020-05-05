@@ -2897,7 +2897,6 @@ docker 是容器的运行环境，管理它的生命周期。kubelet 通过 Cont
 
 ```
 yum install -y yum-utils device-mapper-persistent-data lvm2
-
 wget -P /etc/yum.repos.d/ https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
 yum makecache
 yum install docker-ce-18.06.3.ce -y

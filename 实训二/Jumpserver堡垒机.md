@@ -231,8 +231,8 @@ yum -y install $(cat /opt/jumpserver/requirements/rpm_requirements.txt)
 **11、安装 Python 库依赖**
 
 ```bash
-pip install wheel
-pip install --upgrade pip setuptools
+pip install wheel -i https://mirrors.aliyun.com/pypi/simple/
+pip install --upgrade pip setuptools -i https://mirrors.aliyun.com/pypi/simple/
 pip install -r /opt/jumpserver/requirements/requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 ```
 

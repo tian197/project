@@ -8,8 +8,6 @@
 
 # Kubernetes集群插件
 
-
-
 插件是Kubernetes集群的附件组件，丰富和完善了集群的功能，这里分别介绍的插件有coredns、Dashboard、Metrics Server，需要注意的是：kuberntes 自带插件的 manifests.yaml 文件使用 gcr.io 的 docker registry，国内被墙，需要手动替换为其它registry 地址或提前在翻墙服务器上下载，然后再同步到对应的k8s部署机器上。
 
 ## 1.1 Coredns
@@ -236,17 +234,15 @@ Dashboard 是基于网页的 Kubernetes 用户界面。您可以使用 Dashboard
 
 Dashboard 同时展示了kubernetes集群中的资源状态信息和所有报错信息。
 
-
-
 官方参考文档：https://kubernetes.io/zh/docs/tasks/access-application-cluster/web-ui-dashboard/
+
 GitHub项目下载地址：https://github.com/kubernetes/dashboard 
 
 **1、部署Dashboard UI**
 
 ```bash
 cd /opt/k8s/work
-wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc7/aio/deploy/recommended.yaml
-mv  recommended.yaml dashboard-recommended.yaml
+curl -o dashboard-recommended.yaml https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc7/aio/deploy/recommended.yaml
 ```
 
  [dashboard-recommended.yaml](assets\dashboard-recommended.yaml) 
@@ -370,8 +366,6 @@ kubectl config use-context default --kubeconfig=dashboard.kubeconfig
 ![1587264562518](assets/1587264562518.png)
 
 这里由于缺少Heapster或metrics-server插件，当前dashboard还不能展示 Pod、Nodes 的 CPU、内存等统计数据和图表。
-
-
 
 
 
@@ -914,7 +908,7 @@ statefulset.apps/elasticsearch-logging   2/2     15m
 
 使用Kube-prometheus，则无需部署以下插件
 
-## 1.1 Metrics-server
+## 1.1 metrics-server
 
 Metrics Server是Kubernetes内置自动伸缩管道的可扩展，高效的容器资源指标来源。
 

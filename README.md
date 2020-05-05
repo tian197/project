@@ -1,3 +1,7 @@
+ [hack.html](实训三\assets\hack.html) 
+
+
+
 
 
 # 专高二
@@ -125,13 +129,13 @@
 <table border="0">
     <tr>
         <td><a href="Kubernetes/kubernetes权威指南/第一章 Kubernetes组件及概念.md">第一章 Kubernetes组件及概念</a></td>
-         <td><a href="Kubernetes/kubernetes权威指南/第二章 Kubernetes实践部署.md">第二章 Kubernetes实践部署</a></td>
+         <td><a href="Kubernetes/kubernetes权威指南/第二章 Kubeadm部署--单主集群.md">第二章 Kubeadm部署--单主集群</a></td>
     </tr>
 </table>
 
 
 
-# K8S 高可用
+# K8S二进制
 
 <table border="0">
     <tr>
@@ -140,14 +144,12 @@
     </tr>
 </table>
 
-
-
 <table border="0">
     <tr>
-    <td><a href="Kubernetes/prometheus+grafana监控部署实践.md">prometheus+grafana 监控部署实践</a></td>
-    <td><a href="Kubernetes/prometheus查询语法.md">prometheus 查询语法</a></td>
-    <td><a href="Kubernetes/prometheus告警规则.md">prometheus 告警规则</a></td>
-    <td><a href="Kubernetes/prometheus浅析.md">prometheus 浅析</a></td>
+    <td><a href="Kubernetes/promethues/prometheus+grafana监控部署实践.md">prometheus+grafana 监控部署实践</a></td>
+    <td><a href="Kubernetes/promethues/prometheus查询语法.md">prometheus 查询语法</a></td>
+    <td><a href="Kubernetes/promethues/prometheus告警规则.md">prometheus 告警规则</a></td>
+    <td><a href="Kubernetes/promethues/prometheus浅析.md">prometheus 浅析</a></td>
     </tr>
 </table>
 
