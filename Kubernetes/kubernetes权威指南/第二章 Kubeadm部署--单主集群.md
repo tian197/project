@@ -598,7 +598,7 @@ kube-scheduler-k8s-m01            1/1     Running   1          128m
 $ kubectl -n kube-system describe pods kube-proxy-4n2xg
 ```
 
-**4、验证Kubernetes功能**
+## 1.2.5 验证Kubernetes功能
 
 **==注意：以下操作均在master上。==**
 
@@ -691,7 +691,7 @@ Accept-Ranges: bytes
 
 
 
-## 1.2.5 移除node节点
+## 1.2.6 移除node节点
 
 ```bash
 # master节点执行
@@ -896,53 +896,5 @@ kubectl config use-context default --kubeconfig=dashboard.kubeconfig
 
 
 
-# 1.4 kube-prometheus监控
-
-很多地方提到Prometheus Operator是kubernetes集群监控的终极解决方案，但是目前Prometheus Operator已经不包含完整功能，完整的解决方案已经变为kube-prometheus。项目地址为：
-
-https://github.com/coreos/kube-prometheus
-
-kube-prometheus 是一整套监控解决方案，它使用 Prometheus 采集集群指标，Grafana 做展示，包含如下组件：
-
-| 组件                                                         | 功能描述                                                     |
-| :----------------------------------------------------------- | :----------------------------------------------------------- |
-| The Prometheus Operator                                      | 可以非常简单的在kubernetes集群中部署Prometheus服务，并且提供对kubernetes集群的监控，并且可以配置和管理prometheus |
-| Highly available Prometheus                                  | 高可用监控工具                                               |
-| Highly available Alertmanager                                | 高可用告警工具，用于接收 Prometheus 发送的告警信息，它支持丰富的告警通知渠道，而且很容易做到告警信息进行去重，降噪，分组等，是一款前卫的告警通知系统。 |
-| node-exporter                                                | 用于采集服务器层面的运行指标，包括机器的loadavg、filesystem、meminfo等基础监控，类似于传统主机监控维度的zabbix-agent |
-| ==Prometheus Adapter for Kubernetes Metrics APIs （k8s-prometheus-adapter）== | 轮询Kubernetes API，并将Kubernetes的结构化信息转换为metrics  |
-| ==kube-state-metrics==                                       |                                                              |
-| grafana                                                      | 用于大规模指标数据的可视化展现，是网络架构和应用分析中最流行的时序数据展示工具 |
-
-其中 k8s-prometheus-adapter 使用 Prometheus 实现了 metrics.k8s.io 和 custom.metrics.k8s.io API，所以**不需要再部署** metrics-server（ metrics-server 通过 kube-apiserver 发现所有节点，然后调用 kubelet APIs（通过 https 接口）获得各节点（Node）和 Pod 的 CPU、Memory 等资源使用情况。 从 Kubernetes 1.12 开始，kubernetes 的安装脚本移除了 Heapster，从 1.13 开始完全移除了对 Heapster 的支持，Heapster 不再被维护）。
-
-## 1.4.1 下载源码
-
-```bash
-cd /etc/kubernetes
-git clone https://github.com/coreos/kube-prometheus.git
-```
-
-
-
-## 1.4.2 执行安装
-
-```bash
-# 安装 prometheus-operator
-kubectl apply -f manifests/setup
-# 安装 promethes metric adapter
-kubectl apply -f manifests/
-```
-
-
-
-
-
-
-
-
-
-
-
-
+# 1.4 
 

@@ -74,7 +74,7 @@
 
 （1）PPTP VPN最大优势Windows原生支持，不需要安装客户端；缺点是很多小区及网络设备不支持pptp导致无法访问，开源软件pptp
 
-（2）SSL VPN 典型Open VPN，不但适合用于pptp的场景，还适合对企业异地两地总分公司之间的VPN不间断按需连接，切断需要安装客户端
+（2）SSL VPN 典型Open VPN，不但适合用于pptp的场景，还适合对企业异地两地总分公司之间的VPN不间断按需连接，缺点需要安装客户端
 
 （3）IPSEC VPN适合针对企业异地两地总分公司或多个IDC机房之间的VPN不间断按需连接，并且在部署使用上更简单方便，开源产品openswan小结：
 
@@ -456,6 +456,7 @@ log /var/log/openvpn.log
 net.ipv4.ip_forward = 1
 [root@ openvpn openvpn]# openvpn --daemon --config /etc/openvpn/server.conf
 [root@ openvpn openvpn]# echo "openvpn --daemon --config /etc/openvpn/server.conf">>/etc/rc.d/rc.local
+[root@ openvpn openvpn]# chmod +x /etc/rc.d/rc.local
 [root@ openvpn openvpn]# ps -ef | grep openvpn
 [root@ openvpn openvpn]# ss -anpt| grep 55555
 ```
