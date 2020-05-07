@@ -802,13 +802,11 @@ Dashboard的github  https://github.com/kubernetes/dashboard/blob/master/docs/use
 
 
 
-## 1.3.2 登录 dashboard
+## 1.3.3 生成浏览器访问证书
 
 dashboard 默认只支持 token 认证（不支持 client 证书认证），所以如果使用 Kubeconfig 文件，需要将 token 写入到该文件。
 
-**1、创建并导入认证证书**
-
-创建证书
+**创建证书：**
 
 首先需要确认kubectl命令的配置文件，默认情况下为/etc/kubernetes/admin.conf，而且已经自动创建在$HOME/.kube/config中，如果没有创建则需要手动赋值。
 
@@ -843,6 +841,8 @@ Verifying - Enter Export Password:123456
 ![dasboard-firefox](assets/dasboard-firefox.gif)
 
 
+
+## 1.3.4 登录dashboard 
 
 **2、创建登录 dashboard 的 token 和 kubeconfig 配置文件**
 
