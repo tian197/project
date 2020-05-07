@@ -806,8 +806,6 @@ Dashboard的github  https://github.com/kubernetes/dashboard/blob/master/docs/use
 
 dashboard 默认只支持 token 认证（不支持 client 证书认证），所以如果使用 Kubeconfig 文件，需要将 token 写入到该文件。
 
-
-
 **1、创建并导入认证证书**
 
 创建证书
@@ -817,8 +815,6 @@ dashboard 默认只支持 token 认证（不支持 client 证书认证），所�
 ```
 cat $HOME/.kube/config
 ```
-
-如果确认有集群的配置，则运行以下命令来生成一个p12格式的浏览器证书
 
 如果确认有集群的配置，则运行以下命令来生成一个p12格式的浏览器证书
 
@@ -835,6 +831,8 @@ $ openssl pkcs12 -export -clcerts -inkey dashboard.key -in dashboard.crt -out da
 Enter Export Password:123456
 Verifying - Enter Export Password:123456
 ```
+
+**将生成的dashboard.p12证书下载到电脑；然后导入浏览器：**
 
 导入谷歌浏览器
 

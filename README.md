@@ -124,12 +124,13 @@
 
 
 
-# Kubernetes 权威指南
+# Kubernetes 实践
 
 <table border="0">
     <tr>
-        <td><a href="Kubernetes/kubernetes权威指南/第一章 Kubernetes组件及概念.md">第一章 Kubernetes组件及概念</a></td>
-         <td><a href="Kubernetes/kubernetes权威指南/第二章 Kubeadm部署--单主集群.md">第二章 Kubeadm部署--单主集群</a></td>
+        <td><a href="Kubernetes/kubernetes实践/第一章 Kubernetes组件及概念.md">第一章 Kubernetes组件及概念</a></td>
+         <td><a href="Kubernetes/kubernetes实践/第二章 Kubeadm部署--单主集群.md">第二章 Kubeadm部署--单主集群</a></td>
+        <td><a href="Kubernetes/kubernetes实践/第三章 Kube-prometheus监控.md">第三章 Kube-prometheus监控</a></td>
     </tr>
 </table>
 

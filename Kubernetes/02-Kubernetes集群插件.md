@@ -849,21 +849,21 @@ Kubernetes本身并没有指定日志记录代理，但是有两个可选的日�
 上传镜像并解压导入
 
 ```bash
-rz elk.tar.gz
+rz efk.tar.gz
 cd /opt/k8s/work
 source /opt/k8s/bin/environment.sh
 for node_ip in ${MASTER_IPS[@]}
 do
 	echo -e "\033[42;37m >>> ${node_ip} <<< \033[0m"
 	scp elk.tar.gz root@${node_ip}:/opt/k8s/work
-	ssh root@${node_ip} "cd /opt/k8s/work/ && tar -zxf elk.tar.gz"
+	ssh root@${node_ip} "cd /opt/k8s/work/ && tar -zxf efk.tar.gz"
 done
 ```
 
 所有节点导入镜像
 
 ```
-cd /opt/k8s/work/elk/ && for i in `ls`;do docker load -i $i;done
+cd /opt/k8s/work/efk/ && for i in `ls`;do docker load -i $i;done
 ```
 
 将下载的 kubernetes-server-linux-amd64.tar.gz 解压后，再解压其中的 kubernetes-src.tar.gz 文件。

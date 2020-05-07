@@ -473,7 +473,7 @@ net.ipv4.ip_forward = 1
 
 <https://www.techspot.com/downloads/5182-openvpn.html>
 
-最好下载与服务端版本一致的客户端。
+==**最好下载与服务端版本一致的客户端。以下为windows7的安装过程。windows10安装到C:\Program Files (x86)否则会有权限问题。 **==
 
 ![1583161252347](assets/1583161252347.png)
 
@@ -503,11 +503,14 @@ net.ipv4.ip_forward = 1
 
 ![1583161728665](assets/1583161728665.png)
 
+**记事本打开client.ovpn编辑以下内容：**
+
 ```shell
 client
 dev tun
 proto tcp
-remote 10.0.0.44 55555	#修改成openvpn服务器的ip和openvpn的端口
+#修改成openvpn服务器的ip和openvpn的端口
+remote 10.0.0.44 55555
 resolv-retry infinite
 nobind
 persist-key
