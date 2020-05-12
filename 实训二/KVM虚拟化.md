@@ -8,7 +8,7 @@
 
 # KVM虚拟化
 
-
+# 第一章 KVM入门
 
 # 1.1 KVM简介
 
@@ -23,12 +23,12 @@
 
 
 
-## 1.1.2 虚拟化概念
+## 1.1.1 虚拟化概念
 
 **软件模拟**
 优点：能够模拟任何硬件，包括不存在的
 缺点：功能非常低效，一般用于研究，生产环境不同。
-代表：QEM
+代表：QEMU
 
 **虚拟化层翻译**
 软件全虚拟化----VMware
@@ -47,30 +47,69 @@
 
 
 
-## 1.1.3 QEMU与KVM
+## 1.1.2 KVM、QEMU、libvirt以及virt-manager等组件的关系
 
-​	QUME十一个开源项目，实际就是一台硬件模拟器，可以模拟许多硬件，包括X86架构处理器、AMD64架构处理器等。
-​	QEMU的优点是因为是纯软件模拟，所以可以在支持的平台模拟支持的设备。缺点是因为纯软件模拟，所以非常慢。
-​	KVM只是一个内核模块，只能提供CPU和内存；所以还需要QEMU模拟IO设备；如磁盘、网卡等。
+**QEMU：**
+
+QUME提供了一个开源的全虚拟化的解决方案，实际就是一台硬件模拟器，可以模拟许多硬件，包括X86架构处理器、AMD64架构处理器等。QEMU的优点是因为是纯软件模拟，所以可以在支持的平台模拟支持的设备。缺点是因为纯软件模拟，所以非常慢。
+
+KVM只是一个内核模块，只能提供CPU和内存；所以还需要QEMU模拟IO设备；如磁盘、网卡等。
+
+**KVM：**
 
 
+KVM是Linux内核中的可加载的木块，是一个基于内核的虚拟机。在硬件支持虚拟化(intel VT,AMD-V)的X86平台上实现了全虚拟化功能，由于用户不能直接操作内核，因此需要一个用户空间工具进行操作，通过与QEMU的结合，就可以通过QEMU去操作KVM虚拟机。
 
-## 1.1.4 Libvirt与KVM
+**libvirt：**
+
+
+libvirt是为了更方便地管理平台虚拟化技术而设计的开放源代码的应用程序接口、守护进程和管理工具，它不仅提供了对虚拟化客户机的管理，也提供了对虚拟化网络和存储的管理。尽管libvirt项目最初是为Xen设计的一套API，但是目前对KVM等其他Hypervisor的支持也非常的好。libvirt支持多种虚拟化方案，既支持包括KVM、QEMU、Xen、VMware、VirtualBox等在内的平台虚拟化方案，又支持OpenVZ、LXC等Linux容器虚拟化系统，还支持用户态Linux（UML）的虚拟化。
+
+
+libvirt其实质就是对针对不同的hypervisor的命令进行了一个封装，libvirt针对不同的开发语言提供了api接口，如python、c等；libvirtd是linux的一个守护进程，使用libvirt必须先启动这个守护进程。
 
 Libvirt是一套开源的虚拟化管理工具，主要由3部分组成。
 
 - 一套API的lib库，支持主流的编程语言，包括C、Python、Ruby等
 - Libvirt服务
 - 命令行工具virsh
-  Libvirt可以实现对虚拟机的管理，比如虚拟机的创建、启动、关闭、暂停、恢复、迁移、销毁，以及对虚拟网卡、硬盘、CPU、内存等多种设备的热添加。
+
+Libvirt可以实现对虚拟机的管理，比如虚拟机的创建、启动、关闭、暂停、恢复、迁移、销毁，以及对虚拟网卡、硬盘、CPU、内存等多种设备的热添加。
+
+**其他组件：**
+
+
+因为libvirt是目前使用最为广泛的对KVM虚拟机进行管理的工具和应用程序接口（API），而且一些常用的虚拟机管理工具（如virsh、virt-install、virt-manager等）和云计算框架平台（如OpenStack、OpenNebula、Eucalyptus等）都在底层使用libvirt的应用程序接口。
+
+
+libvirt作为中间适配层，让底层Hypervisor对上层用户空间的管理工具是可以做到完全透明的，因为libvirt屏蔽了底层各种Hypervisor的细节，为上层管理工具提供了一个统一的、较稳定的接口（API）。
+
+![u=851255748,3404846692&fm=173&app=25&f=JPEG](assets/u=851255748,3404846692&fm=173&app=25&f=JPEG.jpg)
 
 
 
-# 2.1 KVM安装
+**总结：**
 
-## 2.1.1 环境准备
 
-### **2.1.1.1 硬件环境**
+KVM是内核的模块；QEMU是提供虚拟化的组件，用户操作KVM模块；libvirt提供一整套的API，用于管理KVM虚拟机，其他图形化界面（virt-manager等）可以通过libvirt管理kvm虚拟机。
+
+
+
+# 1.2 KVM安装
+
+## 1.2.1 环境介绍
+
+| 主机名      | 角色    | 外网IP | 内网IP |      |
+| ----------- | ------- | ------ | ------ | ---- |
+| CentOS7-200 | 宿主机  |        |        |      |
+| localhost   | kvm虚机 |        |        |      |
+|             |         |        |        |      |
+
+
+
+
+
+### 1.2.1.1 硬件环境
 
 ![1581326252534](assets/1581326252534.png)
 
@@ -82,7 +121,7 @@ Libvirt是一套开源的虚拟化管理工具，主要由3部分组成。
 
 
 
-### **2.1.1.2 系统环境**
+### 1.2.1.2 系统环境
 
 **检测系统版本及内核**
 
@@ -124,8 +163,10 @@ KVM其实已经在Centos7内置到系统内核，无需安装。
 [root@ CentOS7-200 ~]# yum install qemu-kvm qemu-kvm-tools libvirt -y
 ```
 
-libvirt 用来管理kvm
-kvm属于内核态，不需要安装。但是需要一些类似于依赖的
+- libvirt 用来管理kvm
+
+- kvm属于内核态，不需要安装。但是需要一些类似于依赖的
+- qemu
 
 
 
@@ -147,7 +188,7 @@ systemctl enable libvirtd.service
 
 
 
-## 2.1.2 创建虚拟机
+## 1.2.2 创建虚拟机
 
 创建虚拟机步骤
 
@@ -157,16 +198,9 @@ systemctl enable libvirtd.service
 
 3.需要安装一个vnc的客户端来连接
 
-注意：
-
-```shell
-[root@ CentOS7-200 ~]#   #这台机器为宿主机
-[root@localhost ~]#		 #这台机器为kvm虚机
-```
 
 
-
-### 2.1.2.1 查看磁盘空间
+### 1.2.2.1 查看磁盘空间
 
 最好是20G以上
 
@@ -184,7 +218,7 @@ tmpfs                394M     0  394M   0% /run/user/0
 
 
 
-### 2.1.2.2 上传镜像 
+### 1.2.2.2 上传镜像 
 
 提示：如果使用rz上传镜像可能会出现错误，所以我们使用dd命令，复制系统的镜像。只需要挂载上光盘即可。
 
@@ -195,7 +229,7 @@ tmpfs                394M     0  394M   0% /run/user/0
 
 
 
-### 2.1.2.3 创建磁盘 
+### 1.2.2.3 创建磁盘 
 
 提示： qemu-img软件包是我们安装qemu-kvm-tools 依赖给安装上的
 
@@ -224,7 +258,7 @@ raw创建多大磁盘，就占用多大空间直接分配，qcow2动态的用多
 
 
 
-### 2.1.2.4 安装虚拟机
+### 1.2.2.4 安装虚拟机
 
 ```shell
 [root@ CentOS7-200 opt]# yum install -y virt-install
@@ -266,7 +300,7 @@ tcp        0      0 0.0.0.0:5900            0.0.0.0:*               LISTEN      
 20.--nographics "virt-install" 将默认使用--vnc选项，使用nographics指定没有控制台被分配给客户机
 ```
 
-### 2.1.2.5 VNC连接虚拟机
+### 1.2.2.5 VNC连接虚拟机
 
 ![1581328308002](assets/1581328308002.png)
 
@@ -286,9 +320,9 @@ Id    Name                           State
 [root@ CentOS7-200 opt]# virsh start c73
 ```
 
-#c73 是虚拟机的名字，是我们创建的时候定义的
+> c73 是虚拟机的名字，是我们创建的时候定义的
 
-#c73 是虚拟机的名字，是我们创建的时候定义的
+
 
 **常用的virsh管理命令**
 
@@ -313,7 +347,7 @@ Id    Name                           State
 
 
 
-# 2.3 KVM桥接配置
+# 1.3 KVM桥接配置
 
 **(建议先配置宿主机桥接网络→创建虚机)**
 
@@ -336,7 +370,7 @@ virbr0		8000.5254005f3794	yes		virbr0-nic   #生成这个
 
 
 
-## 2.3.1 查看物理机网卡设备
+## 1.3.1 查看物理机网卡设备
 
 ```
 [root@CentOS7-200 ~]# ifconfig virbr0
@@ -352,7 +386,7 @@ virbr0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
 
 
 
-## 2.3.2 配置桥接设备br0
+## 1.3.2 配置桥接设备br0
 
 ```shell
 [root@ CentOS7-200 ~]# yum -y install bridge-utils
@@ -470,13 +504,13 @@ nameserver 223.5.5.5
 
 
 
-# 2.4 KVM图形管理工具（virt-manager）
+# 1.4 KVM图形管理工具（virt-manager）
 
 ​	virt-manager是用于管理KVM虚拟环境的主要工具，virt-manager默认设置下需要使用root用户才能够使用该工具。当你想在KVM hypervisor服务器上托管虚拟机，由最终用户而非root用户访问这些虚拟机时并不总是很便利。
 ​	virt-manager可以设置本机，同样也可以连接远程宿主机来管理。
 ​	利用virt-manager、xmanager、xshell启动界面来管理虚拟机,适合管理单机的KVM.
 
-## 2.4.1 查看sshd是否开启X11转发
+## 1.4.1 查看sshd是否开启X11转发
 
 ```shell
 [root@ CentOS7-200 ~]# grep X11Forwarding /etc/ssh/sshd_config --colour
@@ -487,13 +521,13 @@ X11Forwarding yes
 
 
 
-## 2.4.2 安装xorg-x11
+## 1.4.2 安装xorg-x11
 
 ```shell
 yum install -y xorg-x11-font-utils.x86_64 xorg-x11-server-utils.x86_64 xorg-x11-utils.x86_64 xorg-x11-xauth.x86_64 xorg-x11-xinit.x86_64 xorg-x11-drv-ati-firmware
 ```
 
-## 2.4.3 安装libvirt 
+## 1.4.3 安装libvirt 
 
 libvirt是管理虚拟机的API库，不仅支持KVM虚拟机，也可以管理Xen等方案下的虚拟机。
 
@@ -516,7 +550,7 @@ systemctl enable libvirtd.service
 
 
 
-## 2.4.4 配置xshell
+## 1.4.4 配置xshell
 
 **安装好Xming后**，打开xshell，在连接属性的tunneing中，勾选 Forwarding X11 connection to选项，可以正常打开virt-manager的图形界面。
 
@@ -524,7 +558,7 @@ systemctl enable libvirtd.service
 
 
 
-## 2.4.5 启动virt-manager
+## 1.4.5 启动virt-manager
 
 断开xshell会话，重新连接，输入命令：virt-manager，就可以自动弹出kvm管理软件
 
@@ -547,3 +581,59 @@ yum install dejavu-sans-mono-fonts -y
 ![1581329554011](assets/1581329554011.png)
 
 ![1581329561354](assets/1581329561354.png)
+
+
+
+
+
+# 第二章 KVM虚拟化web管理平台
+
+当KVM宿主机越来越多，需要对宿主机的状态进行调控，决定采用WebVirtMgr作为kvm虚拟化的web管理工具，图形化的WEB，让人能更方便的查看kvm 宿主机的情况和操作。
+
+WebVirtMgr是近两年来发展较快，比较活跃，非常清新的一个KVM管理平台，提供对宿主机和虚机的统一管理，它有别于kvm自带的图形管理工具（virtual machine manager），让kvm管理变得更为可视化，对中小型kvm应用场景带来了更多方便。
+
+WebVirtMgr采用几乎纯Python开发，其前端是基于Python的Django，后端是基于Libvirt的Python接口，将日常kvm的管理操作变的更加的可视化。
+
+**WebVirtMgr特点：**
+
+- 操作简单，易于使用
+- 通过libvirt的API接口对kvm进行管理
+- 提供对虚拟机生命周期管理
+- WebVirtMgr 功能
+
+**宿主机管理支持以下功能：**
+
+- CPU利用率
+- 内存利用率
+- 网络资源池管理
+- 存储资源池管理
+- 虚拟机镜像
+- 虚拟机克隆
+- 快照管理
+- 日志管理
+- 虚机迁移
+
+**虚拟机管理支持以下功能：**
+
+- CPU利用率
+- 内存利用率
+- 光盘管理
+- 关/开/暂停虚拟机
+- 安装虚拟机
+- VNC console连接
+- 创建快照
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

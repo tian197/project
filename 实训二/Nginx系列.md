@@ -271,7 +271,7 @@ proxy=http://http://10.0.0.90:90
 
 ```shell
 vim /etc/wgetrc 
-http_proxy=hhttp://10.0.0.90:90
+http_proxy=http://10.0.0.90:90
 ftp_proxy=http://10.0.0.90:90
 ```
 

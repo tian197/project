@@ -124,59 +124,9 @@ setenforce 0
 sed -i  '/^SELINUX/s#enforcing#disabled#g' /etc/selinux/config
 ```
 
-**7、设置rsyslogd 和systemd journald**
-
-systemd 的 journald 是 Centos 7 缺省的日志记录工具，它记录了所有系统、内核、Service Unit 的日志。相比 systemd，journald 记录的日志有如下优势：
-
-- 可以记录到内存或文件系统；(默认记录到内存，对应的位置为 /run/log/jounal)；
-- 可以限制占用的磁盘空间、保证磁盘剩余空间；
-- 可以限制日志文件大小、保存的时间；
-- journald 默认将日志转发给 rsyslog，这会导致日志写了多份，/var/log/messages 中包含了太多无关日志，不方便后续查看，同时也影响系统性能。
-
-```bash
-mkdir /var/log/journal
-mkdir /etc/systemd/journald.conf.d
-cat > /etc/systemd/journald.conf.d/99-prophet.conf <<EOF
-[Journal]
-# 持久化保存到磁盘
-Storage=persistent
-     
-# 压缩历史日志
-Compress=yes
-     
-SyncIntervalSec=5m
-RateLimitInterval=30s
-RateLimitBurst=1000
-     
-# 最大占用空间 10G
-SystemMaxUse=10G
-     
-# 单日志文件最大 200M
-SystemMaxFileSize=200M
-     
-# 日志保存时间 2 周
-MaxRetentionSec=2week
-     
-# 不将日志转发到 syslog
-ForwardToSyslog=no
-EOF
-     
-systemctl restart systemd-journald
-```
-
-**8、升级内核**
-
-```shell
-rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
-rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm
-yum --enablerepo=elrepo-kernel install kernel-lt -y
-grub2-set-default  0 && grub2-mkconfig -o /etc/grub2.cfg
-reboot
-```
 
 
-
-**9、安装docker**
+**7、安装docker**
 
 ```bash
 yum install -y yum-utils device-mapper-persistent-data lvm2
@@ -187,7 +137,7 @@ yum install docker-ce-18.06.3.ce -y
 mkdir -p /etc/docker/
 cat >/etc/docker/daemon.json<<EOF
 {
-    "registry-mirrors": ["https://docker.mirrors.ustc.edu.cn","https://hub-mirror.c.163.com","https://dockerhub.azk8s.cn","https://490smrwk.mirror.aliyuncs.com"],
+    "registry-mirrors": ["https://docker.mirrors.ustc.edu.cn","https://hub-mirror.c.163.com","https://dockerhub.azk8s.cn"],
     "exec-opts": ["native.cgroupdriver=systemd"],
     "max-concurrent-downloads": 20,
     "live-restore": true,
@@ -208,6 +158,18 @@ systemctl enable docker
 
 
 
+**8、升级内核**
+
+```shell
+rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm
+yum --enablerepo=elrepo-kernel install kernel-lt -y
+grub2-set-default  0 && grub2-mkconfig -o /etc/grub2.cfg
+reboot
+```
+
+
+
 
 
 # 1.2 kubeadm部署集群
@@ -221,6 +183,8 @@ systemctl enable docker
 - kubeadm: 集群管理命令。
 - kubelet: 该组件运行在集群中的所有机器上，执行启动pod和容器等操作。
 - kubectl: 与集群通信的命令行工具。
+
+kubeadm不会为您安装或管理kubelet或kubectl，因此你需要确保它们与kubeadm安装的Kubernetes控制平面版本匹配。否则，就有发生版本倾斜的风险，这可能导致意外的错误行为。 然而，kubelet和控制平面之间的一个小版本倾斜是允许的，但是kubelet版本可能永远不会超过API服务器版本。例如，运行1.7.0的kubelets应该完全兼容1.8.0 API服务器，反之则不然。 
 
 ```bash
 # 配置yum源

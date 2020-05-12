@@ -1745,6 +1745,33 @@ echo {1..10}|tr " " "+"|bc
 
 
 
+## /etc/systemd/system和/usr/lib/systemd/system 的区别
+
+每一个 Unit（服务等） 都有一个配置文件，告诉 Systemd 怎么启动这个 Unit 。
+Systemd 默认从目录/etc/systemd/system/读取配置文件。但是，里面存放的大部分文件都是符号链接，指向目录/usr/lib/systemd/system/，真正的配置文件存放在那个目录。 systemctl enable 命令用于在上面两个目录之间，建立符号链接关系。
+
+1.1 /usr/lib/systemd/system/ (软件包安装的单元)
+
+The expectation is that `/lib/systemd/system` is a directory that should only contain systemd unit files which were put there by the package manager (YUM/DNF/RPM/APT/etc).
+
+1.2 /etc/systemd/system/(系统管理员安装的单元, 优先级更高)
+
+Files in `/etc/systemd/system` are manually placed here by the operator of the system for ad-hoc software installations that are not in the form of a package. This would include tarball type software installations or home grown scripts.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## QPS、TPS、并发用户数、吞吐量关系
 
 **1、QPS**
@@ -1867,7 +1894,7 @@ QPS(TPS)=并发数/平均响应时间
 5、 系统中是否存在不合理的线程同步方式
 6、 系统中是否存在不合理的资源竞争
 
-## centos7进入单用户模式
+## Centos7进入单用户模式
 
 当我们设置用户密码时，有可能会忘记，这时如何登陆呢，单用户模式就可以
 
