@@ -131,8 +131,14 @@
         <td><a href="Kubernetes/kubernetes实践/第一章 Kubernetes组件及概念.md">第一章 Kubernetes组件及概念</a></td>
          <td><a href="Kubernetes/kubernetes实践/第二章 Kubeadm部署--单主集群.md">第二章 Kubeadm部署--单主集群</a></td>
         <td><a href="Kubernetes/kubernetes实践/第三章 Kube-prometheus监控.md">第三章 Kube-prometheus监控</a></td>
+         <td><a href="Kubernetes/kubernetes实践/第四章 EFK日志收集.md">第四章 EFK日志收集</a></td>
+    </tr>
+   <tr>
+		<td><a href="Kubernetes/kubernetes实践/第五章 kubeadm部署--多主集群.md">第五章 kubeadm部署--多主集群</a></td>
     </tr>
 </table>
+
+
 
 
 

@@ -210,13 +210,13 @@ systemctl enable --now kubelet
 **1、获得默认配置文件**
 
 ```bash
-kubeadm config print init-defaults > kubeadm-config.yaml
+kubeadm config print init-defaults > kubeadm-init.yaml
 ```
 
 **2、修改配置文件**
 
 ```bash
-vim kubeadm-config.yaml
+vim kubeadm-init.yaml
 
 apiVersion: kubeadm.k8s.io/v1beta2
 bootstrapTokens:
@@ -264,7 +264,7 @@ scheduler: {}
 
 ```bash
 # 查看需要的镜像
-kubeadm config images list --config kubeadm-config.yaml
+kubeadm config images list --config kubeadm-init.yaml
 输出：
 k8s.gcr.io/kube-apiserver:v1.18.0
 k8s.gcr.io/kube-controller-manager:v1.18.0
@@ -275,7 +275,7 @@ k8s.gcr.io/etcd:3.4.3-0
 k8s.gcr.io/coredns:1.6.7
 
 # 拉取需要的镜像
-kubeadm config images pull --config kubeadm-config.yaml
+kubeadm config images pull --config kubeadm-init.yaml
 # 注意：此处由于网络限制，无法拉取；可以自己导入或者构建镜像。
 ```
 
@@ -283,7 +283,7 @@ kubeadm config images pull --config kubeadm-config.yaml
 
 ```bash
 # 初始化
-kubeadm init --config kubeadm-config.yaml
+kubeadm init --config kubeadm-init.yaml
 
 输出：
 W0503 19:35:53.117138    8149 configset.go:202] WARNING: kubeadm cannot validate component configs for API groups [kubelet.config.k8s.io kubeproxy.config.k8s.io]
@@ -359,7 +359,7 @@ kubeadm join 10.0.0.61:6443 --token abcdef.0123456789abcdef \
 
     
 # 恢复 kubeadm init和 kubeadm join对该主机所做的任何更改
-kubeadm reset --kubeconfig kubeadm-config.yaml
+kubeadm reset --kubeconfig kubeadm-init.yaml
 ```
 
 **5、验证测试**

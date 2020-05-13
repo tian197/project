@@ -139,7 +139,7 @@ Disabled
 ```
 
 **检查CPU是否支持虚拟化**
-vmx       ##(for Intel CPU)
+vmx       ##（for Intel CPU）
 svm       ##（for AMD CPU）
 
 KVM其实已经在Centos7内置到系统内核，无需安装。
@@ -242,18 +242,27 @@ total 4277444
 -rw-r--r-- 1 root root     197120 Apr 24 14:43 c73.qcow2 
 ```
 
--f 制定虚拟机格式
-/opt/Centos  存放路径
-6G 代表镜像大小
+- -f 制定虚拟机格式
+
+- /opt/ 存放路径
+- 6G 代表磁盘大小
 
 **磁盘格式介绍**
+
 raw----裸磁盘不支持快照
+
 qcow2----支持快照。Openstack使用的方式推荐使用这个。注意：关闭虚拟机后操作。
-区别：
+
+**区别：**
+
 全镜像格式（典型代表raw），特点：设置多大就是多大，写入速度快，方便转换其他格式，性能最优，但是占用空间大。
+
 稀疏格式（典型代表qcow2）,其特点：支持压缩、快照、镜像，更小的存储空间（即用多少占多少）
+
 qcow2 数据的基本组成单元是cluster 
+
 raw性能比qcow2快
+
 raw创建多大磁盘，就占用多大空间直接分配，qcow2动态的用多大占用多大空间。
 
 
@@ -331,18 +340,18 @@ Id    Name                           State
 显示虚拟机信息		virsh dominfo c73
 列出ID为6的虚拟机名 virsh domname 6
 显示虚拟机内存和cpu的使用情况 	virt-top
-关闭虚拟机 		virsh shutdown c73 
-强制关闭虚拟机 	virsh destroy c73 
-启动虚拟机 			virsh start c73 
-设置虚拟机随系统自启 	virsh autostart c73 
-关闭虚拟机随系统自启	virsh autostart --disable c73 
-删除虚拟机			virsh undefine c73 
-通过控制窗口登录虚拟机 virsh console c73 
-挂起$hostname虚拟机 	virsh suspend c73 
+关闭虚拟机 		   virsh shutdown c73 
+强制关闭虚拟机 	  virsh destroy c73 
+启动虚拟机 			  virsh start c73 
+设置虚拟机随系统自启 	  virsh autostart c73 
+关闭虚拟机随系统自启	  virsh autostart --disable c73 
+删除虚拟机			  virsh undefine c73 
+通过控制窗口登录虚拟机   virsh console c73 
+挂起$hostname虚拟机 	  virsh suspend c73 
 恢复挂起的虚拟机		virsh resume c73 
 查看网卡配置信息		virsh domiflist c73 
 查看该虚拟机的磁盘位置	  virsh domblklist  c73 
-查看KVM虚拟机当前配置	virsh dumpxml c73 
+查看KVM虚拟机当前配置    virsh dumpxml c73 
 ```
 
 
