@@ -96,10 +96,10 @@ echo "*/5 * * * * /usr/sbin/ntpdate ntp1.aliyun.com >/dev/null 2>&1" >>/var/spoo
 
 ```shell
 cat >>/etc/hosts<<EOF
-c7m01 10.0.0.41
-c702  10.0.0.42
-c703  10.0.0.43
-c704  10.0.0.44
+10.0.0.41 c7m01
+10.0.0.42 c702
+10.0.0.43 c703
+10.0.0.44 c704
 EOF
 ```
 
@@ -122,7 +122,7 @@ yum -y install sshpass
 
 #!/bin/bash
 UserName=root
-IPlist=(10.0.0.45 10.0.0.42 10.0.0.43 10.0.0.44 )
+IPlist=(10.0.0.41 10.0.0.42 10.0.0.43 10.0.0.44 )
 #创建密钥
 ssh-keygen -t dsa -f ~/.ssh/id_dsa -P "" &>/dev/null
 #分发公钥
@@ -767,7 +767,7 @@ chmod +x /usr/bin/master_ip_failover
 
 
 
-### 2.6 模拟主库宕机vip飘移
+## 2.6 模拟主库宕机vip飘移
 
 **关闭c702上的主库mysql**
 

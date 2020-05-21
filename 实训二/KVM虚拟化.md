@@ -244,7 +244,7 @@ $ tree /var/lib/libvirt
 
 
 
-# 1.3 KVM网络配置
+# 1.3 KVM宿主机网络配置
 
 kvm客户机网络连接有两种方式：
 
@@ -505,6 +505,9 @@ tmpfs                394M     0  394M   0% /run/user/0
 ```shell
 dd if=/dev/cdrom of=/var/lib/libvirt/images/CentOS-7-x86_64-DVD-1908.iso
 ```
+
+- if=文件名：输入文件名，缺省为标准输入。即指定源文件。< if=input file >
+- of=文件名：输出文件名，缺省为标准输出。即指定目的文件。< of=output file >
 
 如果镜像大于4G；或者不想用本机版本的系统；建议使用xftp上传新的镜像。
 

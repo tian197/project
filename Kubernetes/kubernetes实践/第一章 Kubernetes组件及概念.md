@@ -56,6 +56,8 @@ k8s的目标是让部署容器化的应用简单并且高效，k8s提供了应�
 
 master节点上主要运行四个组件：api-server、scheduler、controller-manager、etcd。
 
+![14791969222306](assets/14791969222306.png)
+
 | 组件               | 作用                                                         |
 | ------------------ | ------------------------------------------------------------ |
 | api-server         | 提供了资源操作的唯一入口，各组件协调者并提供认证、授权、访问控制、API注册和发现等机制； |
@@ -63,7 +65,7 @@ master节点上主要运行四个组件：api-server、scheduler、controller-ma
 | controller-manager | 如果说APIServer做的是“前台”的工作的话，那controller manager就是负责“后台”的。每个资源一般都对一个控制器，而controller manager就是负责管理这些控制器的。比如我们通过APIServer创建一个pod，当这个pod创建成功后，APIServer的任务就算完成了。而后面保证Pod的状态始终和我们预期的一样的重任就由controller manager去保证了。 |
 | etcd               | etcd是一个高可用的键值存储系统，Kubernetes使用它来存储各个资源的状态，从而实现了Restful的API。 |
 
-![14791969222306](assets/14791969222306.png)
+
 
 
 
@@ -71,15 +73,15 @@ master节点上主要运行四个组件：api-server、scheduler、controller-ma
 
 每个Node节点主要由三个模块组成：kubelet、kube-proxy、Container runtime。
 
+![1583588234233](assets/1583588234233.png)
+
 | 组件              | 作用                                                         |
 | ----------------- | ------------------------------------------------------------ |
 | Container runtime | 负责镜像管理以及Pod和容器的真正运行（CRI）；指的是容器运行环境，目前Kubernetes支持docker和rkt两种容器。 |
 | kube-proxy        | 负责为Service提供cluster内部的服务发现和负载均衡；该模块实现了Kubernetes中的服务发现和反向代理功能。反向代理方面：kube-proxy支持TCP和UDP连接转发，默认基于Round Robin算法将客户端流量转发到与service对应的一组后端pod。服务发现方面，kube-proxy使用etcd的watch机制，监控集群中service和endpoint对象数据的动态变化，并且维护一个service到endpoint的映射关系，从而保证了后端pod的IP变化不会对访问者造成影响。另外kube-proxy还支持session affinity。 |
 | kubelet           | 负责维护容器的生命周期，同时也负责Volume（CVI）和网络（CNI）的管理；是Master在每个Node节点上面的agent，是Node节点上面最重要的模块，它负责维护和管理该Node上面的所有容器但是如果容器不是通过Kubernetes创建的，它并不会管理。本质上，它负责使Pod得运行状态与期望的状态一致。 |
 
-![1583588234233](assets/1583588234233.png)
-
-除了核心组件，还有一些推荐的Add-ons：
+除了核心组件，还有一些推荐的Add-ons（插件）：
 
 - kube-dns负责为整个集群提供DNS服务
 - Ingress Controller为服务提供外网入口
@@ -116,9 +118,9 @@ Kubernetes设计理念和功能其实就是一个类似Linux的分层架构，�
 | :-------: | :----------------------------------------------------------- |
 |    Pod    | 容器组Pod是最小部署单元，一个Pod有一个或多个容器组成， Pod中容器共享存储和网络，在同一台Docker主机上运行。 |
 |  Service  | Service一个应用服务抽象，定义了Pod逻辑集合和访问这个Pod集合的策略。<br/>Service代理Pod集合对外表现是为一个访问入口，分配一个集群IP地址，来自这个IP的请求将负载均衡转发后端Pod中的容器。<br/>Service通过Lable Selector选择一组Pod提供服务。 |
-|  Volume   | 数据卷，共享Pod中容器使用的数据。                            |
-| Namespace | 命名空间将对象逻辑上分配到不同Namespace，可以是不同的项目、用户等区分管理，并设定控制策略，从而实现多租户。命名空间也称为虚拟集群。 |
-|   Lable   | 标签用于区分对象（比如Pod、 Service），键/值对存在；每个对象可以有多个标签，通过标签关联对象。标签可以在创建一个对象的时候直接给与，也可以在后期随时修改，每一个对象可以拥有多个标签，但是，key值必须是唯一的。 |
+|  Volume   | 数据卷，共享Pod中容器使用的数据。分为临时卷、本地卷和网络卷，临时卷和本地卷位于Node本地，常用于数据缓存 |
+| Namespace | 命名空间将对象逻辑上分配到不同Namespace，可以是不同的项目、用户等区分管理，并设定控制策略，从而实现多租户。命名空间也称为虚拟集群。同一类型资源对象的Name必须唯一，逻辑分组，默认名称空间是default |
+|   Lable   | 标签用于区分对象（比如Pod、 Service），是key/values数据；每个对象可以有多个标签，通过标签关联对象。标签可以在创建一个对象的时候直接给与，也可以在后期随时修改，每一个对象可以拥有多个标签，但是，key值必须是唯一的。 |
 
 
 
