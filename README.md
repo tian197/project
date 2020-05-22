@@ -166,9 +166,9 @@
 
 <table border="0">
     <tr>
-        <td><a href="专高二/附录/CentOS6克隆虚机前优化.md">CentOS6 克隆虚机前优化</a></td>
-		<td><a href="专高二/附录/CentOS7系统安装及克隆前优化.md">CentOS7 系统安装及克隆前优化</a></td>
-        <td><a href="专高二/附录/本地镜像YUM源.md">本地镜像YUM源</a></td>
+        <td><a href="杂货铺/CentOS6克隆虚机前优化.md">CentOS6 克隆虚机前优化</a></td>
+		<td><a href="杂货铺/CentOS7系统安装及克隆前优化.md">CentOS7 系统安装及克隆前优化</a></td>
+        <td><a href="杂货铺/本地镜像YUM源.md">本地镜像YUM源</a></td>
     </tr>
 </table>
 
