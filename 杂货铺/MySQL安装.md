@@ -135,6 +135,7 @@ LimitNOFILE = 5000
 # 重新加载systemd并启动
 systemctl daemon-reload
 systemctl restart mysqld.service
+systemctl enable mysqld.service
 ```
 
 

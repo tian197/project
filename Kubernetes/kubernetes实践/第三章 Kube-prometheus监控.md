@@ -157,16 +157,6 @@ kube-scheduler-k8s-m01            3m           24Mi
 
 
 
-
-
-
-
-
-
-
-
-
-
 ## 1.2.4 清除资源
 
 ```bash

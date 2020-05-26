@@ -180,9 +180,9 @@ reboot
 
 所有节点都安装 kubeadm、kubelet、kubectl，注意：node节点的kubectl不是必须的。
 
-- kubeadm: 集群管理命令。
-- kubelet: 该组件运行在集群中的所有机器上，执行启动pod和容器等操作。
-- kubectl: 与集群通信的命令行工具。
+- kubeadm：集群管理命令。
+- kubelet：该组件运行在集群中的所有机器上，执行启动pod和容器等操作。
+- kubectl：与集群通信的命令行工具。
 
 kubeadm不会为您安装或管理kubelet或kubectl，因此你需要确保它们与kubeadm安装的Kubernetes控制平面版本匹配。否则，就有发生版本倾斜的风险，这可能导致意外的错误行为。 然而，kubelet和控制平面之间的一个小版本倾斜是允许的，但是kubelet版本可能永远不会超过API服务器版本。例如，运行1.7.0的kubelets应该完全兼容1.8.0 API服务器，反之则不然。 
 
@@ -661,6 +661,7 @@ Accept-Ranges: bytes
 # master节点执行
 kubectl drain k8s-m02 --delete-local-data --force --ignore-daemonsets
 kubectl delete node k8s-m02
+
 # node节点执行
 kubeadm reset
 systemctl stop kubelet
@@ -672,6 +673,7 @@ ifconfig docker0 down
 ip link delete cni0
 ip link delete flannel.1
 systemctl start docker
+
 # 查看容器发现都已删除
 docker ps -a
 ```
@@ -830,7 +832,7 @@ KUBE_APISERVER="https://10.0.0.61:6443"
 DASHBOARD_LOGIN_TOKEN=$(kubectl describe secret -n kube-system ${ADMIN_SECRET} | grep -E '^token' | awk '{print $2}')
 # 设置集群参数
 kubectl config set-cluster kubernetes \
-  --certificate-authority=/etc/kubernetes/cert/ca.pem \
+  --certificate-authority=/etc/kubernetes/pki/ca.crt \
   --embed-certs=true \
   --server=${KUBE_APISERVER} \
   --kubeconfig=dashboard.kubeconfig
@@ -856,7 +858,4 @@ kubectl config use-context default --kubeconfig=dashboard.kubeconfig
 
 
 
-
-
-# 1.4 
 
