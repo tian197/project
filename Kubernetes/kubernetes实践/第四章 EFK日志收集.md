@@ -294,18 +294,18 @@ $ kubectl logs  elasticsearch-logging-0 -n kube-system
 $ kubectl proxy --address='10.0.0.61' --port=38086 --accept-hosts='^*$'
 ```
 
+浏览器访问 URL：http://10.0.0.61:38086/api/v1/namespaces/kube-system/services/kibana-logging/proxy
+
+
+
+## 1.4.2 API server方式访问
+
 查看访问地址：
 
 ```
 $ kubectl cluster-info |grep kibana
 Kibana is running at https://10.0.0.61:6443/api/v1/namespaces/kube-system/services/kibana-logging/proxy
 ```
-
-浏览器访问 URL：http://10.0.0.61:38086/api/v1/namespaces/kube-system/services/kibana-logging/proxy
-
-
-
-## 1.4.3 API server方式访问
 
 浏览器访问：https://10.0.0.61:6443/api/v1/namespaces/kube-system/services/kibana-logging/proxy
 

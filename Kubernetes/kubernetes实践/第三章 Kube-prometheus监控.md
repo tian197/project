@@ -40,6 +40,7 @@ git clone https://github.com/coreos/kube-prometheus.git
 ```bash
 # 导入或者下载所需要的镜像
 # 安装 prometheus-operator
+cd kube-prometheus
 kubectl apply -f manifests/setup
 # 安装 promethes metric adapter
 kubectl apply -f manifests/
