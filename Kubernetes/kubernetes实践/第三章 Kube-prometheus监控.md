@@ -191,7 +191,7 @@ nohup kubectl port-forward --address 0.0.0.0 pod/prometheus-k8s-0 -n monitoring 
 **访问 Grafana UI：**
 
 ```bash
-nohup kubectl port-forward --address 0.0.0.0 svc/grafana -n monitoring 3000:3000 
+nohup kubectl port-forward --address 0.0.0.0 svc/grafana -n monitoring 3000:3000 &
 ```
 
 **访问 Alertmanager UI：**
