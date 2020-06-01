@@ -67,7 +67,7 @@
         <td><a href="专高三/第十三单元 Linux作业调度/第十三单元 Linux作业调度.md">第十三单元 Linux作业调度</a></td>
         <td><a href="专高三/第十四单元 Shell脚本应用/第十四单元 Shell脚本应用.md">第十四单元 Shell脚本应用</a></td>
         <td><a href="专高三/第十五单元 网站数据分析/第十五单元 网站数据分析.md">第十五单元 网站数据分析</a></td>
-        <td><a href="专高三/第十六单元 邮件报警/第十六单元 邮件报警.md">第十六单元 邮件报警</a></td>
+        <td><a href="专高三/第十六单元 邮件报警/第十六单元 Sendmail邮件报警.md">第十六单元 Sendmail邮件报警</a></td>
     </tr>
 	<tr>
         <td><a href="专高三/第十七单元 SSH远程管理/第十七单元 SSH远程管理.md">第十七单元 SSH远程管理</a></td>
