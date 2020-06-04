@@ -4,7 +4,7 @@
 
 # 第十四单元-Nagios	
 
-## 14.1 nagios介绍
+# 14.1 nagios介绍
 
 　　![1568425560801](assets/1568425560801.png)
 
@@ -47,7 +47,7 @@
 
 
 
-## 14.2 nagios工作原理
+# 14.2 nagios工作原理
 
 　　Nagios的功能是监控服务和主机，但是他自身并不包括这部分功能，所有的监控、检测功能都是通过各种插件来完成的。
 
@@ -87,7 +87,7 @@ Nagios 通过NRPE 来远端管理服务
 
 
 
-## 14.3 实验环境
+# 14.3 实验环境
 
 | **Host type** | **OS**                     | **IP**    | **Software**                              |
 | ------------- | -------------------------- | --------- | ----------------------------------------- |
@@ -102,15 +102,15 @@ SELINUX=disabled
 
 
 
-## 14.4 nagios监控端部署
+# 14.4 nagios监控端部署
 
-### 14.4.1  lamp环境搭建
+## 14.4.1  lamp环境搭建
 
 ```
 yum -y install httpd php lrzsz openssl-devel gcc gcc-c++
 ```
 
-#整合Apache和PHP
+整合Apache和PHP
 
 ```
 vim /etc/httpd/conf/httpd.conf
@@ -120,16 +120,16 @@ AddType application/x-httpd-php .php
 
 
 
-### 14.4.2 安装nagios-server端
+## 14.4.2 安装nagios-server端
 
-#创建nagios用户组和用户
+**创建nagios用户组和用户**
 
 ```shell
 groupadd nagios
 useradd -g nagios nagios
 ```
 
-#编译安装nagios
+**编译安装nagios**
 
 ```shell
 wget https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.3.1.tar.gz
@@ -144,13 +144,13 @@ make install-webconf		#安装Nagios网页配置文件
 make install-config			#安装Nagios配置文件目录
 ```
 
-#生成Nagios网页认证文件并创建用户
+**生成Nagios网页认证文件并创建用户**
 
 ```shell
 htpasswd  -c  /usr/local/nagios/etc/htpasswd.users   nagiosadmin
 ```
 
-#添加nagios到开机自启
+**添加nagios到开机自启**
 
 ```shell
 chkconfig --add nagios
@@ -158,14 +158,14 @@ chkconfig --level 35 nagios on
 chkconfig --list nagios
 ```
 
-#启动httpd和nagios
+**启动httpd和nagios**
 
 ```shell
 /etc/init.d/httpd restart
 /etc/init.d/nagios restart
 ```
 
-### 14.4.3 安装nagios-plugins
+## 14.4.3 安装nagios-plugins
 
 ```shell
 wget https://nagios-plugins.org/download/nagios-plugins-2.1.4.tar.gz
@@ -177,7 +177,7 @@ make install
 #注意：如果要监控mysql 需要添加 --with-mysql
 ```
 
-### 14.4.4 安装nrpe
+## 14.4.4 安装nrpe
 
 NRPE是监控软件nagios的一个扩展，它被用于被监控的服务器上，向nagios监控平台提供该服务器的一些本地的情况。例如，cpu负载、内存使用、硬盘使用等等。NRPE可以称为nagios的for linux 客户端。
 
@@ -194,7 +194,7 @@ make install-daemon-config
 make install-xinetd
 ```
 
-配置NRPE
+**配置NRPE**
 
 ```
 vim /usr/local/nagios/etc/nrpe.cfg
@@ -204,7 +204,7 @@ vim /etc/xinetd.d/nrpe
 only_from       = 10.0.0.21
 ```
 
-#配置/etc/services
+**配置/etc/services**
 
 ```
 vim +429 /etc/services
@@ -212,22 +212,20 @@ nrpe            5666/tcp
 nrpe            5666/udp
 ```
 
-
-
-#启动NRPE
+**启动NRPE**
 
 ```
 /etc/init.d/xinetd restart
 ```
 
-#启动httpd和nagios
+**启动httpd和nagios**
 
 ```
 /etc/init.d/httpd restart
 /etc/init.d/nagios restart
 ```
 
-#测试nrpe效果
+**测试nrpe效果**
 
 ```
 /usr/local/nagios/libexec/check_nrpe -H 10.0.0.21 -c check_load
@@ -239,7 +237,7 @@ nrpe            5666/udp
 
 
 
-### 14.4.5 浏览器访问
+## 14.4.5 浏览器访问
 
 http://10.0.0.21/nagios/
 
@@ -251,7 +249,7 @@ http://10.0.0.21/nagios/
 
 
 
-## 14.5 Nagios主配置文件
+# 14.5 Nagios主配置文件
 
 ```shell
 nagios.cfg
@@ -280,7 +278,7 @@ Nagios定义变量的配置文件：/usr/local/nagios/etc/resource.cfg
 
 
 
-## 14.6 nagios被监控端部署（linux）
+# 14.6 nagios被监控端部署（linux）
 
 
 监控另一台linux服务器
@@ -345,9 +343,10 @@ nrpe            5666/udp
 
 
 
-## 14.7 nagios服务端配置
+# 14.7 nagios服务端配置
 
-##在Nagios监控端10.0.0.21上添加一台被监控的主机
+**在Nagios监控端10.0.0.21上添加一台被监控的主机**
+
 (1)新增一个配置文件linux.cfg
 
 ```shell
@@ -373,7 +372,7 @@ define host{
         }
 ```
 
-#修改属主属组
+修改属主属组
 
 ```
 chown -R nagios.nagios /usr/local/nagios/etc/objects/linux.cfg	
