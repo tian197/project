@@ -169,6 +169,12 @@
         <td><a href="杂货铺/本地镜像YUM源.md">本地镜像YUM源</a></td>
         <td><a href="杂货铺/MySQL安装.md">MySQL安装</a></td>
     </tr>
+     <tr>
+        <td><a href="杂货铺/SSH代理穿透.md">SSH代理穿透</a></td>
+        <td><a href="杂货铺/Windows Server 2012配置NAT代理服务器.md">Windows Server 2012配置NAT代理服务器</a></td>
+        <td><a href="杂货铺/Windows计划任务添加.md">Windows计划任务添加</a></td>
+         <td><a href="杂货铺/CwRsync实现windows下文件定时同步.md">CwRsync实现windows文件定时同步</a></td>
+    </tr>
 </table>
 
 

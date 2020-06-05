@@ -1,4 +1,4 @@
-# 配置本地镜像源
+# 配置本地镜像YUM源
 
 
 
@@ -26,12 +26,11 @@ mount -o loop CentOS-6.8-x86_64-bin-DVD1.iso  /mnt/yum/
 cd /etc/yum.repos.d
 rm -f *
 
-cat >iso.repo<<EOF
+cat >CentOS-6.8.repo<<EOF
 [Packages]
 name=centos6.8
 baseurl=file:///mnt/yum
 gpgcheck=0
-
 EOF
 ```
 

@@ -22,13 +22,7 @@ yum安装比较简单，适合对数据库要求不太高的场合，例如并�
 
 
 
-
-
-
-
 # 1.2 如何安装
-
-
 
 ## yum安装
 
@@ -137,12 +131,6 @@ systemctl daemon-reload
 systemctl restart mysqld.service
 systemctl enable mysqld.service
 ```
-
-
-
-
-
-
 
 
 

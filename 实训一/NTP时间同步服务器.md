@@ -53,7 +53,7 @@ systemctl enable ntpd
 
 
 
-## 客户端同步时间
+## 2.1 客户端同步时间
 
 ```shell
 [root@ c702 yum.repos.d]# systemctl stop ntpd
